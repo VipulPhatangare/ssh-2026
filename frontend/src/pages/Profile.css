@@ -1,0 +1,55 @@
+.profile-page {
+  padding: 40px 0;
+  min-height: calc(100vh - 70px);
+}
+
+.profile-page h1 {
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.profile-card {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.profile-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.info-item label {
+  font-weight: 500;
+  color: #666;
+  font-size: 14px;
+}
+
+.info-item span {
+  font-size: 16px;
+  color: #333;
+}
+
+.profile-form {
+  display: grid;
+  gap: 20px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .profile-info {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,151 @@
+.application-tracker {
+  padding: 40px 0;
+  min-height: calc(100vh - 70px);
+}
+
+.application-tracker h1 {
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.applications-layout {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 25px;
+}
+
+.applications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.application-item {
+  cursor: pointer;
+  transition: all 0.3s;
+  border-left: 4px solid transparent;
+}
+
+.application-item:hover {
+  border-left-color: #0066cc;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.application-item.active {
+  border-left-color: #0066cc;
+  background-color: #f0f7ff;
+}
+
+.application-item h3 {
+  margin-bottom: 10px;
+  color: #0066cc;
+  font-size: 18px;
+}
+
+.app-number {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+}
+
+.app-date {
+  font-size: 12px;
+  color: #999;
+  margin-top: 10px;
+}
+
+.application-details {
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+}
+
+.application-details h2 {
+  margin-bottom: 25px;
+  color: #333;
+}
+
+.detail-section {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.detail-section:last-child {
+  border-bottom: none;
+}
+
+.detail-section h3 {
+  margin-bottom: 15px;
+  color: #0066cc;
+}
+
+.detail-section p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.badge-lg {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.remarks {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background-color: #ddd;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 25px;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -26px;
+  top: 5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #0066cc;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px #0066cc;
+}
+
+.timeline-content strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.timeline-content p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.timeline-date {
+  font-size: 12px;
+  color: #999;
+}
+
+@media (max-width: 768px) {
+  .applications-layout {
+    grid-template-columns: 1fr;
+  }
+}

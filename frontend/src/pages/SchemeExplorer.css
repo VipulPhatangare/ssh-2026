@@ -1,0 +1,59 @@
+.scheme-explorer {
+  padding: 40px 0;
+  min-height: calc(100vh - 70px);
+}
+
+.scheme-explorer h1 {
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.schemes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 25px;
+}
+
+.scheme-card h3 {
+  color: #0066cc;
+  margin-bottom: 10px;
+}
+
+.scheme-dept {
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 15px;
+}
+
+.scheme-details {
+  margin: 20px 0;
+}
+
+.scheme-details h4 {
+  font-size: 16px;
+  margin: 15px 0 10px 0;
+  color: #333;
+}
+
+.scheme-details ul {
+  margin-left: 20px;
+  color: #666;
+}
+
+.scheme-details li {
+  margin: 5px 0;
+}
+
+@media (max-width: 768px) {
+  .schemes-grid {
+    grid-template-columns: 1fr;
+  }
+}
