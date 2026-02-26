@@ -108,29 +108,8 @@
 .ai-history-list::-webkit-scrollbar-track { background: transparent; }
 .ai-history-list::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 4px; }
 
-.ai-history-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 16px;
-  cursor: pointer;
-  border-radius: 8px;
-  margin: 2px 8px;
-  transition: background 0.15s;
-}
-
-.ai-history-item:hover {
-  background: rgba(99,102,241,0.1);
-}
-
-.ai-history-item.active {
-  background: rgba(99,102,241,0.2);
-  border-left: 2px solid #6366f1;
-}
-
 .ai-history-icon {
   font-size: 16px;
-  margin-top: 1px;
   flex-shrink: 0;
 }
 
@@ -889,6 +868,185 @@
   transform: translateY(-2px);
 }
 
+/* ──────────── Compare Schemes Bar ──────────── */
+.ai-compare-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  background: rgba(99,102,241,0.07);
+  border-top: 1px solid rgba(99,102,241,0.2);
+  border-bottom: 1px solid rgba(99,102,241,0.2);
+  animation: fadeSlideIn 0.3s ease;
+}
+
+.ai-compare-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+}
+
+.ai-compare-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99,102,241,0.5);
+}
+
+.ai-compare-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.ai-compare-btn.loading {
+  background: linear-gradient(135deg, #4f46e5, #0284c7);
+}
+
+.ai-compare-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ──────────── Comparison Table ──────────── */
+.cmp-wrapper {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.cmp-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #a5b4fc;
+  margin-bottom: 12px;
+}
+
+.cmp-table-scroll {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(99,102,241,0.25);
+}
+
+.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+  font-size: 12px;
+}
+
+.cmp-table thead tr {
+  background: rgba(99,102,241,0.18);
+}
+
+.cmp-table th {
+  padding: 10px 12px;
+  text-align: left;
+  color: #c7d2fe;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(99,102,241,0.25);
+  white-space: nowrap;
+}
+
+.cmp-param-col {
+  min-width: 140px;
+  color: #a5b4fc !important;
+  background: rgba(99,102,241,0.08);
+}
+
+.cmp-scheme-col {
+  min-width: 180px;
+}
+
+.cmp-table tbody tr:nth-child(even) {
+  background: rgba(255,255,255,0.02);
+}
+
+.cmp-table tbody tr:hover {
+  background: rgba(99,102,241,0.07);
+}
+
+.cmp-param-cell {
+  padding: 9px 12px;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-right: 1px solid rgba(99,102,241,0.15);
+  background: rgba(99,102,241,0.05);
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.cmp-value-cell {
+  padding: 9px 12px;
+  color: #cbd5e1;
+  line-height: 1.55;
+  border-right: 1px solid rgba(99,102,241,0.1);
+  vertical-align: top;
+}
+
+.cmp-value-cell:last-child {
+  border-right: none;
+}
+
+.cmp-link {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.cmp-link:hover {
+  text-decoration: underline;
+}
+
+/* Summary */
+.cmp-summary {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cmp-summary-block {
+  background: rgba(99,102,241,0.07);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.cmp-summary-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a5b4fc;
+  margin-bottom: 6px;
+}
+
+.cmp-summary-text {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin: 0;
+}
+
 /* ──────────── Mobile Overlay Sidebar ──────────── */
 .ai-sidebar-overlay {
   display: none;
@@ -896,6 +1054,104 @@
   inset: 0;
   background: rgba(0,0,0,0.6);
   z-index: 19;
+}
+
+/* ──────────── Session sidebar enhancements ──────────── */
+
+/* History item: row with delete icon */
+.ai-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 2px 8px;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.ai-history-item:hover {
+  background: rgba(99,102,241,0.12);
+}
+
+.ai-history-item.active {
+  background: rgba(99,102,241,0.22);
+  border-left: 2px solid #6366f1;
+}
+
+/* Delete button hidden until hover */
+.ai-history-delete {
+  opacity: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: #94a3b8;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ai-history-item:hover .ai-history-delete {
+  opacity: 1;
+}
+
+.ai-history-delete:hover {
+  background: rgba(239,68,68,0.18);
+  color: #f87171;
+}
+
+/* Empty state */
+.ai-history-empty {
+  padding: 20px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #475569;
+  font-style: italic;
+}
+
+/* ──────────── Chat bubble improvements ──────────── */
+
+/* Slightly wider bubbles for readability */
+.ai-bubble-wrap { display: flex; flex-direction: column; max-width: 72%; }
+.ai-msg-row.user .ai-bubble-wrap { align-items: flex-end; }
+
+/* Message row spacing */
+.ai-msg-row {
+  display: flex;
+  gap: 12px;
+  animation: fadeSlideIn 0.35s ease both;
+  margin-bottom: 4px;
+}
+.ai-msg-row.user { flex-direction: row-reverse; }
+
+/* Bot bubble — slightly elevated glass */
+.ai-msg-row.bot .ai-bubble {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(99,102,241,0.18);
+  border-radius: 20px 20px 20px 4px;
+  color: #e2e8f0;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+
+/* User bubble */
+.ai-msg-row.user .ai-bubble {
+  background: linear-gradient(135deg, #1565c0, #6366f1);
+  border-radius: 20px 20px 4px 20px;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(99,102,241,0.35);
+}
+
+/* Timestamp row */
+.ai-msg-time {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 4px;
+  padding: 0 4px;
 }
 
 /* ──────────── Responsive ──────────── */

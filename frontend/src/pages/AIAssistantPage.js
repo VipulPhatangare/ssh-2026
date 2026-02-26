@@ -4,7 +4,8 @@ import axios from 'axios';
 import './AIAssistantPage.css';
 
 // ─── N8N Webhook Configuration ───────────────────────────────────────────────
-const N8N_WEBHOOK_URL = 'https://synthomind.cloud/webhook/ssh-2026-main-chat-bot';
+const N8N_WEBHOOK_URL         = 'https://synthomind.cloud/webhook/ssh-2026-main-chat-bot';
+const N8N_COMPARE_WEBHOOK_URL = 'https://synthomind.cloud/webhook/ssh_2026_comaparision';
 
 // ─── UI limits ───────────────────────────────────────────────────────────────
 const MAX_SCHEMES_IN_CHAT = 4;
@@ -13,17 +14,22 @@ const MAX_SCHEMES_IN_CHAT = 4;
 const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 const generateChatId = () => `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-// ─── Dummy chat history ───────────────────────────────────────────────────────
-const HISTORY_ITEMS = [
-  { id: 1, icon: '🚧', title: 'Complaint about pothole',       time: 'Today, 9:41 AM' },
-  { id: 2, icon: '📄', title: 'Ration card application',       time: 'Today, 8:12 AM' },
-  { id: 3, icon: '🏛️', title: 'Birth certificate status',      time: 'Yesterday' },
-  { id: 4, icon: '💧', title: 'Water supply complaint',        time: 'Yesterday' },
-  { id: 5, icon: '🏠', title: 'Property tax inquiry',          time: 'Mon, Feb 24' },
-  { id: 6, icon: '👴', title: 'Pension scheme details',        time: 'Sun, Feb 23' },
-  { id: 7, icon: '🏫', title: 'School enrollment help',        time: 'Sat, Feb 22' },
-  { id: 8, icon: '🚗', title: 'Driving license renewal',       time: 'Fri, Feb 21' },
-];
+// ─── Format session timestamp for sidebar ────────────────────────────────────
+const formatSessionTime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return d.toLocaleDateString('en-IN', { weekday: 'short' });
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+};
 
 // ─── Quick action pills ───────────────────────────────────────────────────────
 const QUICK_ACTIONS = [
@@ -112,22 +118,102 @@ const sendToWebhook = async (payload) => {
     return null;
   }
 };
+// ─── Comparison result table component ──────────────────────────────────
+const PARAM_LABELS = {
+  objective:                'Objective',
+  target_beneficiaries:     'Target Beneficiaries',
+  eligibility_criteria:     'Eligibility Criteria',
+  financial_benefits:       'Financial Benefits',
+  type_of_assistance:       'Type of Assistance',
+  application_mode:         'Application Mode',
+  implementing_department:  'Implementing Dept.',
+};
 
+const ComparisonTable = ({ data }) => {
+  if (!data) return <p>📊 No comparison data received.</p>;
+
+  const schemes = Array.isArray(data.schemes) ? data.schemes : [];
+  const paramKeys = Object.keys(PARAM_LABELS);
+  const summary = data.comparison_summary || {};
+
+  return (
+    <div className="cmp-wrapper">
+      <p className="cmp-title">⚖️ Scheme Comparison ({schemes.length} schemes)</p>
+
+      {/* Scrollable table */}
+      <div className="cmp-table-scroll">
+        <table className="cmp-table">
+          <thead>
+            <tr>
+              <th className="cmp-param-col">Parameter</th>
+              {schemes.map((s, i) => (
+                <th key={i} className="cmp-scheme-col">{s.scheme_name}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {paramKeys.map(key => (
+              <tr key={key}>
+                <td className="cmp-param-cell">{PARAM_LABELS[key]}</td>
+                {schemes.map((s, i) => (
+                  <td key={i} className="cmp-value-cell">{s[key] || '—'}</td>
+                ))}
+              </tr>
+            ))}
+            {/* Official link row */}
+            <tr>
+              <td className="cmp-param-cell">Official Link</td>
+              {schemes.map((s, i) => (
+                <td key={i} className="cmp-value-cell">
+                  {s.official_link
+                    ? <a href={s.official_link} target="_blank" rel="noopener noreferrer" className="cmp-link">Apply ↗</a>
+                    : '—'}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Summary section */}
+      {(summary.key_differences || summary.who_should_apply_for_which) && (
+        <div className="cmp-summary">
+          {summary.key_differences && (
+            <div className="cmp-summary-block">
+              <p className="cmp-summary-label">🔍 Key Differences</p>
+              <p className="cmp-summary-text">{summary.key_differences}</p>
+            </div>
+          )}
+          {summary.who_should_apply_for_which && (
+            <div className="cmp-summary-block">
+              <p className="cmp-summary-label">🎯 Who Should Apply</p>
+              <p className="cmp-summary-text">{summary.who_should_apply_for_which}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 // ─── Component ────────────────────────────────────────────────────────────────
 const AIAssistantPage = () => {
   const { user } = useContext(AuthContext);
 
-  const [messages, setMessages]         = useState([]);
-  const [input, setInput]               = useState('');
-  const [isTyping, setIsTyping]         = useState(false);
-  const [isRecording, setIsRecording]   = useState(false);
-  const [sidebarOpen, setSidebarOpen]   = useState(false);
-  const [activeChat, setActiveChat]     = useState(1);
-  const [isHindi, setIsHindi]           = useState(false);
-  const [dragOver, setDragOver]         = useState(false);
-  const [searchQuery, setSearchQuery]   = useState('');
-  const [sessionId]                    = useState(() => generateSessionId());
-  const [uploadedFile, setUploadedFile] = useState(null);
+  const [messages, setMessages]                 = useState([]);
+  const [input, setInput]                       = useState('');
+  const [isTyping, setIsTyping]                 = useState(false);
+  const [isRecording, setIsRecording]           = useState(false);
+  const [sidebarOpen, setSidebarOpen]           = useState(false);
+  const [activeChat, setActiveChat]             = useState(null);
+  const [isHindi, setIsHindi]                   = useState(false);
+  const [dragOver, setDragOver]                 = useState(false);
+  const [searchQuery, setSearchQuery]           = useState('');
+  const [sessionId, setSessionId]               = useState(() => generateSessionId());
+  const [uploadedFile, setUploadedFile]         = useState(null);
+  const [isComparing, setIsComparing]           = useState(false);
+  const [compareUsed, setCompareUsed]           = useState(false);
+  const [sessions, setSessions]                 = useState([]);
+  const [sessionsLoading, setSessionsLoading]   = useState(false);
 
   const messagesEndRef  = useRef(null);
   const textareaRef     = useRef(null);
@@ -138,6 +224,44 @@ const AIAssistantPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Load session list on mount (when user is available)
+  useEffect(() => {
+    if (user) loadSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Auto-save session to DB whenever messages change (debounced 600ms)
+  useEffect(() => {
+    if (!messages.length) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const title =
+      messages.find(m => m.role === 'user')?.content?.slice(0, 60).trim() || 'New Chat';
+    const timer = setTimeout(() => {
+      axios
+        .put(
+          `http://localhost:5000/api/ai/sessions/${sessionId}`,
+          { title, messages },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        .then(res => {
+          const saved = res.data.session;
+          if (saved) {
+            setSessions(prev => {
+              const exists = prev.find(s => s.sessionId === saved.sessionId);
+              if (exists) {
+                return prev.map(s => (s.sessionId === saved.sessionId ? saved : s));
+              }
+              return [saved, ...prev];
+            });
+          }
+        })
+        .catch(() => {});
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   // Auto-resize textarea
   const handleInputChange = (e) => {
@@ -431,13 +555,128 @@ const AIAssistantPage = () => {
   // ─── New chat ─────────────────────────────────────────────────────────────────
   const startNewChat = () => {
     setMessages([]);
+    const newSid = generateSessionId();
+    setSessionId(newSid);
     setActiveChat(null);
+    setCompareUsed(false);
     setSidebarOpen(false);
   };
 
-  // ─── Filtered history ────────────────────────────────────────────────────────
-  const filteredHistory = HISTORY_ITEMS.filter(item =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+  // ─── Load session list from DB ────────────────────────────────────────────────
+  const loadSessions = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setSessionsLoading(true);
+    try {
+      const res = await axios.get('http://localhost:5000/api/ai/sessions', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSessions(res.data.sessions || []);
+    } catch (err) {
+      console.error('Failed to load sessions:', err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  // ─── Open an existing session ─────────────────────────────────────────────────
+  const openSession = async (sess) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await axios.get(`http://localhost:5000/api/ai/sessions/${sess.sessionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const loaded = res.data.session;
+      setMessages(loaded.messages || []);
+      setSessionId(sess.sessionId);
+      setActiveChat(sess.sessionId);
+      setCompareUsed(false);
+      setSidebarOpen(false);
+    } catch (err) {
+      console.error('Failed to load session:', err);
+    }
+  };
+
+  // ─── Delete a session ─────────────────────────────────────────────────────────
+  const deleteSession = async (sessId, e) => {
+    e.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/ai/sessions/${sessId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSessions(prev => prev.filter(s => s.sessionId !== sessId));
+      // If it was the open session, start fresh
+      if (sessId === sessionId) startNewChat();
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+    }
+  };
+
+  // ─── Compare schemes ─────────────────────────────────────────────────────────
+  const handleCompareSchemes = async () => {
+    const latestSchemesMsg = [...messages].reverse().find(
+      m => m.role === 'bot' && Array.isArray(m.schemes) && m.schemes.length > 0
+    );
+    if (!latestSchemesMsg) return;
+
+    const schemesToCompare = latestSchemesMsg.schemes.slice(0, MAX_SCHEMES_IN_CHAT);
+    const schemeNames = schemesToCompare.map(s => s.scheme_name).filter(Boolean);
+
+    const payload = {
+      sessionId,
+      userId:   user?._id     || 'guest',
+      userName: user?.fullName || 'Guest User',
+      schemeNames,
+      schemes:  schemesToCompare,
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log('📊 Sending comparison request:', payload);
+    setIsComparing(true);
+    setCompareUsed(true);        // hide button permanently from this point
+    setIsTyping(true);           // show bot typing animation
+
+    try {
+      const res = await axios.post(N8N_COMPARE_WEBHOOK_URL, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const raw = res.data;
+      console.log('📊 Comparison response:', raw);
+
+      // The webhook returns an array with one object containing the full comparison
+      const compData = Array.isArray(raw) ? raw[0] : raw;
+
+      const botMsg = {
+        id: Date.now(),
+        role: 'bot',
+        content: null,
+        schemes: [],
+        comparison: true,
+        comparisonData: compData || null,
+        time: getTime(),
+      };
+      setMessages(prev => [...prev, botMsg]);
+    } catch (err) {
+      console.error('❌ Compare error:', err);
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: 'bot',
+        content: '❌ Could not fetch comparison. Please try again.',
+        schemes: [],
+        time: getTime(),
+      }]);
+    } finally {
+      setIsTyping(false);
+      setIsComparing(false);
+    }
+  };
+
+  // ─── Filtered sessions ────────────────────────────────────────────────────────
+  const filteredSessions = sessions.filter(s =>
+    (s.title || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // ─── Masks Aadhaar ────────────────────────────────────────────────────────────
@@ -514,21 +753,35 @@ const AIAssistantPage = () => {
             />
           </div>
 
-          {/* History list */}
+          {/* Sessions list */}
           <div className="ai-history-list">
-            {filteredHistory.map(item => (
-              <div
-                key={item.id}
-                className={`ai-history-item ${activeChat === item.id ? 'active' : ''}`}
-                onClick={() => { setActiveChat(item.id); setSidebarOpen(false); }}
-              >
-                <span className="ai-history-icon">{item.icon}</span>
-                <div className="ai-history-info">
-                  <p className="ai-history-title">{item.title}</p>
-                  <p className="ai-history-time">{item.time}</p>
+            {sessionsLoading ? (
+              <p className="ai-history-empty">Loading…</p>
+            ) : filteredSessions.length === 0 ? (
+              <p className="ai-history-empty">
+                {searchQuery ? 'No results' : 'No conversations yet'}
+              </p>
+            ) : (
+              filteredSessions.map(sess => (
+                <div
+                  key={sess.sessionId}
+                  className={`ai-history-item ${activeChat === sess.sessionId ? 'active' : ''}`}
+                  onClick={() => openSession(sess)}
+                >
+                  <span className="ai-history-icon">💬</span>
+                  <div className="ai-history-info">
+                    <p className="ai-history-title">{sess.title || 'New Chat'}</p>
+                    <p className="ai-history-time">{formatSessionTime(sess.updatedAt)}</p>
+                  </div>
+                  <button
+                    className="ai-history-delete"
+                    onClick={(e) => deleteSession(sess.sessionId, e)}
+                    title="Delete conversation"
+                    aria-label="Delete conversation"
+                  >🗑️</button>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* User info */}
@@ -632,8 +885,13 @@ const AIAssistantPage = () => {
                             )}
                           </div>
                         )}
-                        {msg.content}
-                        
+                        {/* Comparison Table */}
+                        {msg.comparison && msg.comparisonData ? (
+                          <ComparisonTable data={msg.comparisonData} />
+                        ) : (
+                          msg.content
+                        )}
+
                         {/* Scheme Cards */}
                         {msg.schemes && msg.schemes.length > 0 && (
                           <div className="ai-schemes-container">
@@ -683,6 +941,31 @@ const AIAssistantPage = () => {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* ── Compare Schemes bar ── */}
+          {(() => {
+            if (compareUsed) return null;
+            // Find most-recent bot message with >1 scheme
+            const latestSchemeMsg = [...messages].reverse().find(
+              m => m.role === 'bot' && Array.isArray(m.schemes) && m.schemes.length > 1
+            );
+            if (!latestSchemeMsg) return null;
+            return (
+              <div className="ai-compare-bar">
+                <button
+                  className={`ai-compare-btn ${isComparing ? 'loading' : ''}`}
+                  onClick={handleCompareSchemes}
+                  disabled={isComparing}
+                >
+                  {isComparing ? (
+                    <><span className="ai-compare-spinner" /> Comparing…</>
+                  ) : (
+                    <>⚖️ Compare These Schemes</>
+                  )}
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Recording bar */}
           {isRecording && (

@@ -5,6 +5,7 @@ const cloudinary = require('cloudinary').v2;
 const pdfParse = require('pdf-parse');
 const axios = require('axios');
 const Upload = require('../models/Upload');
+const ChatSession = require('../models/ChatSession');
 const { protect } = require('../middleware/auth');
 
 // Configure Cloudinary
@@ -227,4 +228,62 @@ router.get('/uploads', protect, async (req, res) => {
   }
 });
 
+// ─── Chat Session Routes ───────────────────────────────────────────────────────
+
+// GET /api/ai/sessions — list user's sessions (metadata only, no messages)
+router.get('/sessions', protect, async (req, res) => {
+  try {
+    const sessions = await ChatSession.find(
+      { userId: req.user._id },
+      { sessionId: 1, title: 1, createdAt: 1, updatedAt: 1 }
+    ).sort({ updatedAt: -1 }).limit(100);
+    res.json({ success: true, sessions });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/ai/sessions/:sessionId — get full session (with messages)
+router.get('/sessions/:sessionId', protect, async (req, res) => {
+  try {
+    const session = await ChatSession.findOne({
+      sessionId: req.params.sessionId,
+      userId: req.user._id,
+    });
+    if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+    res.json({ success: true, session });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PUT /api/ai/sessions/:sessionId — create or update session
+router.put('/sessions/:sessionId', protect, async (req, res) => {
+  try {
+    const { title, messages } = req.body;
+    const session = await ChatSession.findOneAndUpdate(
+      { sessionId: req.params.sessionId, userId: req.user._id },
+      { $set: { title: title || 'New Chat', messages: messages || [] } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json({ success: true, session: { sessionId: session.sessionId, title: session.title, updatedAt: session.updatedAt } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/ai/sessions/:sessionId — delete session
+router.delete('/sessions/:sessionId', protect, async (req, res) => {
+  try {
+    await ChatSession.findOneAndDelete({
+      sessionId: req.params.sessionId,
+      userId: req.user._id,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
+
