@@ -9,8 +9,8 @@ const errorHandler = require('./middleware/errorHandler');
 const path = require('path');
 const fs = require('fs');
 
-// Load env vars
-dotenv.config();
+// Load env vars from root directory
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Connect to database
 connectDB();
