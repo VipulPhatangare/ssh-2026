@@ -2,6 +2,9 @@ const User = require('../models/User');
 const { sendTokenResponse } = require('../utils/jwtUtils');
 const { deleteFile, downloadFile, getFileMetadata } = require('../config/gridfs');
 const mongoose = require('mongoose');
+const axios = require('axios');
+
+const N8N_USER_EMBEDDING_WEBHOOK = 'https://synthomind.cloud/webhook-test/ssh_2026_user_data_embeddings';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -57,6 +60,36 @@ exports.register = async (req, res, next) => {
 
     // Don't log sensitive IDs
     console.log(`User registered: ${user.email}`);
+
+    // Fire-and-forget: send registration data + _id to n8n for embedding / CRM
+    const webhookPayload = {
+      _id:                  user._id,
+      fullName:             user.fullName,
+      email:                user.email,
+      age:                  user.age,
+      gender:               user.gender,
+      casteCategory:        user.casteCategory,
+      annualIncome:         user.annualIncome,
+      occupation:           user.occupation,
+      district:             user.district,
+      samagraId:            user.samagraId,
+      aadhaarNumber:        user.aadhaarNumber        || null,
+      panNumber:            user.panNumber            || null,
+      passportNumber:       user.passportNumber       || null,
+      drivingLicenseNumber: user.drivingLicenseNumber || null,
+      voterIdNumber:        user.voterIdNumber        || null,
+      rationCardNumber:     user.rationCardNumber     || null,
+      governmentEmployeeId: user.governmentEmployeeId || null,
+      registeredAt:         user.createdAt,
+    };
+
+    axios.post(N8N_USER_EMBEDDING_WEBHOOK, webhookPayload, {
+      headers: { 'Content-Type': 'application/json' },
+    }).then(() => {
+      console.log(`✅ Registration data sent to n8n for user: ${user._id}`);
+    }).catch(err => {
+      console.error('⚠️  n8n registration webhook failed (non-blocking):', err.message);
+    });
 
     sendTokenResponse(user, 201, res);
   } catch (error) {
