@@ -1,59 +1,347 @@
+/* ===================================
+   SCHEME EXPLORER PAGE STYLES
+   =================================== */
+
 .scheme-explorer {
   padding: 40px 0;
   min-height: calc(100vh - 70px);
+  background-color: #f9f9f9;
+}
+
+.scheme-explorer .container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .scheme-explorer h1 {
   margin-bottom: 30px;
   color: #333;
+  font-size: 36px;
+  font-weight: 700;
 }
+
+/* ===================================
+   FILTER BUTTONS
+   =================================== */
 
 .filter-buttons {
   display: flex;
   gap: 15px;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   flex-wrap: wrap;
 }
 
-.schemes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 25px;
-}
-
-.scheme-card h3 {
-  color: #0066cc;
-  margin-bottom: 10px;
-}
-
-.scheme-dept {
-  color: #666;
+.filter-buttons .btn {
+  padding: 10px 20px;
   font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+/* ===================================
+   SEARCH & FILTER SECTION
+   =================================== */
+
+.search-filter-section {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.scheme-details {
-  margin: 20px 0;
+.search-box {
+  flex: 1;
+  min-width: 250px;
 }
 
-.scheme-details h4 {
-  font-size: 16px;
-  margin: 15px 0 10px 0;
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.search-input:focus {
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+.department-select {
+  padding: 12px 16px;
+  font-size: 15px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  background-color: white;
+  transition: all 0.3s ease;
+  min-width: 200px;
+}
+
+.department-select:focus {
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.department-select:hover {
+  border-color: #0066cc;
+}
+.btn-primary {
+  background-color: #0066cc;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0052a3;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: #e8e8e8;
   color: #333;
 }
 
-.scheme-details ul {
-  margin-left: 20px;
-  color: #666;
+.btn-secondary:hover {
+  background-color: #d0d0d0;
+  transform: translateY(-2px);
 }
 
-.scheme-details li {
-  margin: 5px 0;
+/* ===================================
+   SCHEMES LIST & CARDS
+   =================================== */
+
+.schemes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
+
+.no-schemes {
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+  padding: 40px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.scheme-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border-left: 4px solid #0066cc;
+}
+
+.scheme-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.scheme-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.scheme-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.scheme-name {
+  color: #0066cc;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  word-wrap: break-word;
+}
+
+.scheme-department {
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scheme-description {
+  color: #555;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.view-more-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 16px;
+}
+
+/* ===================================
+   RESPONSIVE DESIGN
+   =================================== */
 
 @media (max-width: 768px) {
-  .schemes-grid {
-    grid-template-columns: 1fr;
+  .scheme-explorer h1 {
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+
+  .filter-buttons {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .filter-buttons .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .search-filter-section {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 25px;
+  }
+
+  .search-box {
+    min-width: 100%;
+  }
+
+  .search-input {
+    font-size: 14px;
+    padding: 11px 14px;
+  }
+
+  .department-select {
+    width: 100%;
+    font-size: 14px;
+    padding: 11px 14px;
+    min-width: auto;
+  }
+
+  .schemes-list {
+    gap: 15px;
+  }
+
+  .scheme-card {
+    padding: 20px;
+  }
+
+  .scheme-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .scheme-name {
+    font-size: 18px;
+  }
+
+  .scheme-description {
+    font-size: 14px;
+  }
+
+  .view-more-btn {
+    width: 100%;
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scheme-explorer {
+    padding: 20px 0;
+  }
+
+  .scheme-explorer .container {
+    padding: 0 15px;
+  }
+
+  .scheme-explorer h1 {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+
+  .filter-buttons {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .filter-buttons .btn {
+    padding: 12px 16px;
+    width: 100%;
+    font-size: 13px;
+  }
+
+  .search-filter-section {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .search-box {
+    min-width: 100%;
+  }
+
+  .search-input {
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 5px;
+  }
+
+  .department-select {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 5px;
+  }
+
+  .scheme-card {
+    padding: 16px;
+    border-left-width: 3px;
+  }
+
+  .scheme-name {
+    font-size: 16px;
+  }
+
+  .scheme-department {
+    font-size: 12px;
+  }
+
+  .scheme-description {
+    font-size: 13px;
+  }
+
+  .view-more-btn {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }

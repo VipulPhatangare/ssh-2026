@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import SchemeExplorer from './pages/SchemeExplorer';
+import SchemeDetails from './pages/SchemeDetails';
 import LifeEventPage from './pages/LifeEventPage';
 import ApplicationTracker from './pages/ApplicationTracker';
 import GrievancePage from './pages/GrievancePage';
@@ -45,6 +46,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <SchemeExplorer />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/schemes/:id" 
+              element={
+                <PrivateRoute>
+                  <SchemeDetails />
                 </PrivateRoute>
               } 
             />
