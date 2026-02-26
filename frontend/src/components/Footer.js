@@ -106,7 +106,7 @@ const Footer = () => {
         {/* Bottom Footer */}
         <div className="flex flex-col md:flex-row items-center justify-between">
           <p className="text-sm text-gray-400 mb-4 md:mb-0">
-            © {currentYear} MP E-Governance Portal. Made with
+            © {currentYear} Sahay AI. Made with
             <Heart size={14} className="inline-block mx-1 text-red-500" />
             for citizens
           </p>

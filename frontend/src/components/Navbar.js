@@ -17,7 +17,7 @@ const Navbar = () => {
       <div className="container">
         <div className="navbar-content">
           <Link to="/" className="navbar-brand">
-            MP E-Governance Portal
+            Sahay AI
           </Link>
           
           <div className="navbar-links">
