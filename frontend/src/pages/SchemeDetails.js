@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
 import './SchemeDetails.css';
 
@@ -8,9 +9,11 @@ const SchemeDetails = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [scheme, setScheme] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [eligibility, setEligibility] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
@@ -19,6 +22,13 @@ const SchemeDetails = () => {
   useEffect(() => {
     fetchSchemeDetails();
   }, [id]);
+
+  // Fetch eligibility check
+  useEffect(() => {
+    if (id && user?.id) {
+      fetchEligibility();
+    }
+  }, [id, user?.id]);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -39,6 +49,16 @@ const SchemeDetails = () => {
     }
   };
 
+  const fetchEligibility = async () => {
+    try {
+      const response = await api.get(`/schemes/check/${id}/${user?.id}`);
+      setEligibility(response.data);
+    } catch (err) {
+      console.error('Error checking eligibility:', err);
+      // Silently fail - eligibility check is optional
+    }
+  };
+
   const handleApply = () => {
     if (scheme?.applyUrl) {
       window.open(scheme.applyUrl, '_blank', 'noopener,noreferrer');
@@ -48,6 +68,44 @@ const SchemeDetails = () => {
   const handleBack = () => {
     navigate('/schemes');
   };
+
+  // Determine eligibility banner state
+  const getEligibilityBannerState = () => {
+    if (!eligibility) return null;
+    
+    if (eligibility.eligible) {
+      return {
+        type: 'fully-eligible',
+        title: t('fullyEligible') || 'You Meet All Requirements',
+        description: t('fullyEligibleDesc') || 'You meet all eligibility criteria and have all required documents. You can apply for this scheme now.',
+      };
+    }
+    
+    if (eligibility.missingDocs && eligibility.missingDocs.length > 0 && 
+        (!eligibility.failedConditions || eligibility.failedConditions.length === 0)) {
+      return {
+        type: 'missing-docs',
+        title: t('missingDocuments') || 'Missing Documents',
+        description: t('missingDocsDesc') || 'You meet the eligibility criteria, but you need to upload the following documents to proceed:',
+        items: eligibility.missingDocs,
+        itemType: 'document',
+      };
+    }
+    
+    if (eligibility.failedConditions && eligibility.failedConditions.length > 0) {
+      return {
+        type: 'not-eligible',
+        title: t('notEligible') || 'Not Eligible',
+        description: t('notEligibleDesc') || 'Unfortunately, you do not meet the following eligibility criteria:',
+        items: eligibility.failedConditions,
+        itemType: 'condition',
+      };
+    }
+    
+    return null;
+  };
+
+  const eligibilityBanner = getEligibilityBannerState();
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -134,6 +192,58 @@ const SchemeDetails = () => {
         </button>
 
         <div className="scheme-details-wrapper">
+          {/* ELIGIBILITY BANNER SECTION */}
+          {eligibilityBanner && (
+            <div className={`eligibility-banner eligibility-${eligibilityBanner.type}`}>
+              <div className="banner-header">
+                {eligibilityBanner.type === 'fully-eligible' && (
+                  <span className="banner-icon">✓</span>
+                )}
+                {eligibilityBanner.type === 'missing-docs' && (
+                  <span className="banner-icon">⚠</span>
+                )}
+                {eligibilityBanner.type === 'not-eligible' && (
+                  <span className="banner-icon">✗</span>
+                )}
+                <div className="banner-content">
+                  <h3 className="banner-title">{eligibilityBanner.title}</h3>
+                  <p className="banner-description">{eligibilityBanner.description}</p>
+                </div>
+              </div>
+
+              {eligibilityBanner.items && eligibilityBanner.items.length > 0 && (
+                <div className="banner-items">
+                  <ul className="items-list">
+                    {eligibilityBanner.items.map((item, index) => (
+                      <li key={index} className={`item item-${eligibilityBanner.itemType}`}>
+                        {eligibilityBanner.itemType === 'document' && (
+                          <>
+                            <span className="item-icon">📄</span>
+                            <span className="item-text">{item}</span>
+                          </>
+                        )}
+                        {eligibilityBanner.itemType === 'condition' && (
+                          <>
+                            <span className="item-icon">•</span>
+                            <span className="item-text">{item}</span>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {eligibilityBanner.type === 'missing-docs' && (
+                    <div className="banner-cta">
+                      <p className="cta-text">
+                        {t('uploadDocsEncouragement') || 'Please upload or obtain these documents to complete your eligibility for this scheme.'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* LEFT SECTION - SCHEME DETAILS (70%) */}
           <div className="scheme-details-card">
             <div className="scheme-header-section">

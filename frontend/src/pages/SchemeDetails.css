@@ -8,6 +8,179 @@
   background-color: #f9f9f9;
 }
 
+/* ===================================
+   ELIGIBILITY BANNERS - THREE STATE SYSTEM
+   =================================== */
+
+.eligibility-banner {
+  width: 100%;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  padding: 20px;
+  animation: slideDown 0.3s ease-out;
+  border-left: 6px solid;
+}
+
+/* Fully Eligible - Green State */
+.eligibility-fully-eligible {
+  background: linear-gradient(135deg, #d4edda 0%, #e8f5e9 100%);
+  border-left-color: #28a745;
+  color: #155724;
+}
+
+.eligibility-fully-eligible .banner-icon {
+  color: #28a745;
+  font-size: 32px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.eligibility-fully-eligible .banner-title {
+  color: #155724;
+}
+
+/* Missing Documents - Yellow/Warning State */
+.eligibility-missing-docs {
+  background: linear-gradient(135deg, #fff3cd 0%, #fffaf0 100%);
+  border-left-color: #ffc107;
+  color: #856404;
+}
+
+.eligibility-missing-docs .banner-icon {
+  color: #ff9800;
+  font-size: 32px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.eligibility-missing-docs .banner-title {
+  color: #856404;
+}
+
+.eligibility-missing-docs .item-icon {
+  color: #ff9800;
+}
+
+/* Not Eligible - Red State */
+.eligibility-not-eligible {
+  background: linear-gradient(135deg, #f8d7da 0%, #ffebee 100%);
+  border-left-color: #dc3545;
+  color: #721c24;
+}
+
+.eligibility-not-eligible .banner-icon {
+  color: #dc3545;
+  font-size: 32px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.eligibility-not-eligible .banner-title {
+  color: #721c24;
+}
+
+/* Banner Header */
+.banner-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.banner-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-title {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.banner-description {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.95;
+  line-height: 1.5;
+}
+
+/* Banner Items */
+.banner-items {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 0;
+}
+
+.item-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  min-width: 20px;
+  height: 24px;
+}
+
+.item-document .item-icon {
+  color: #ff9800;
+}
+
+.item-condition .item-icon {
+  color: #dc3545;
+}
+
+.item-text {
+  flex: 1;
+  line-height: 1.5;
+}
+
+/* CTA Section */
+.banner-cta {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  border-left: 4px solid #ff9800;
+}
+
+.cta-text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #856404;
+  line-height: 1.5;
+}
+
 .scheme-details-page .container {
   max-width: 1400px;
   margin: 0 auto;
