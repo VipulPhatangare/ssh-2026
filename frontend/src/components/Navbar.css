@@ -36,6 +36,12 @@
   background-color: rgba(255,255,255,0.1);
 }
 
+.home-link {
+  font-weight: 600;
+  border-left: 2px solid white;
+  padding-left: 13px;
+}
+
 @media (max-width: 768px) {
   .navbar-content {
     flex-direction: column;

@@ -21,6 +21,7 @@ const Navbar = () => {
           </Link>
           
           <div className="navbar-links">
+            {user && <Link to="/" className="nav-link home-link">Home</Link>}
             {user ? (
               <>
                 <Link to="/dashboard" className="nav-link">Dashboard</Link>
