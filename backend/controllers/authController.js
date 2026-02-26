@@ -3,8 +3,18 @@ const { sendTokenResponse } = require('../utils/jwtUtils');
 const { deleteFile, downloadFile, getFileMetadata } = require('../config/gridfs');
 const mongoose = require('mongoose');
 const axios = require('axios');
+const pdfParse = require('pdf-parse');
 
 const N8N_USER_EMBEDDING_WEBHOOK = 'https://synthomind.cloud/webhook-test/ssh_2026_user_data_embeddings';
+
+// Helper: read a GridFS download stream into a Buffer
+const streamToBuffer = (stream) =>
+  new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+  });
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -251,6 +261,63 @@ exports.updateProfile = async (req, res, next) => {
       new: true,
       runValidators: true
     });
+
+    // Fire-and-forget: send updated profile + extracted PDF texts to n8n
+    (async () => {
+      try {
+        // Attempt to extract text from each stored PDF document
+        const PDF_DOCS = [
+          { field: 'incomeCertificate',   label: 'income_certificate_text' },
+          { field: 'domicileCertificate', label: 'domicile_certificate_text' },
+          { field: 'casteCertificate',    label: 'caste_certificate_text' },
+        ];
+
+        const pdfTexts = {};
+        for (const { field, label } of PDF_DOCS) {
+          const fileId = user[field];
+          if (!fileId) { pdfTexts[label] = null; continue; }
+          try {
+            const stream = downloadFile(fileId.toString());
+            const buf    = await streamToBuffer(stream);
+            const parsed = await pdfParse(buf);
+            pdfTexts[label] = parsed.text.trim() || null;
+          } catch (pdfErr) {
+            console.warn(`⚠️  Could not extract text from ${field}:`, pdfErr.message);
+            pdfTexts[label] = null;
+          }
+        }
+
+        const webhookPayload = {
+          _id:                  user._id,
+          fullName:             user.fullName,
+          email:                user.email,
+          age:                  user.age,
+          gender:               user.gender,
+          casteCategory:        user.casteCategory,
+          annualIncome:         user.annualIncome,
+          occupation:           user.occupation,
+          district:             user.district,
+          samagraId:            user.samagraId             || null,
+          aadhaarNumber:        user.aadhaarNumber         || null,
+          panNumber:            user.panNumber             || null,
+          passportNumber:       user.passportNumber        || null,
+          drivingLicenseNumber: user.drivingLicenseNumber  || null,
+          voterIdNumber:        user.voterIdNumber         || null,
+          rationCardNumber:     user.rationCardNumber      || null,
+          governmentEmployeeId: user.governmentEmployeeId  || null,
+          updatedAt:            user.updatedAt,
+          // PDF raw texts (null if not uploaded or text-unextractable)
+          ...pdfTexts,
+        };
+
+        await axios.post(N8N_USER_EMBEDDING_WEBHOOK, webhookPayload, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        console.log(`✅ Profile update sent to n8n for user: ${user._id}`);
+      } catch (webhookErr) {
+        console.error('⚠️  n8n profile-update webhook failed (non-blocking):', webhookErr.message);
+      }
+    })();
 
     res.status(200).json({
       success: true,
