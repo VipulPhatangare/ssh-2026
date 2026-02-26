@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import ModernDashboard from './pages/ModernDashboard';
 import Profile from './pages/Profile';
 import SchemeExplorer from './pages/SchemeExplorer';
 import LifeEventPage from './pages/LifeEventPage';
@@ -14,12 +15,15 @@ import ApplicationTracker from './pages/ApplicationTracker';
 import GrievancePage from './pages/GrievancePage';
 import AdminPanel from './pages/AdminPanel';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+
+  // Don't show old navbar on modern-dashboard (which has its own navbar)
+  const showNavbar = location.pathname !== '/modern-dashboard';
+
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <Navbar />
+    <div className="App">
+      {showNavbar && <Navbar />}
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -29,6 +33,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/modern-dashboard" 
+              element={
+                <PrivateRoute>
+                  <ModernDashboard />
                 </PrivateRoute>
               } 
             />
@@ -82,9 +94,17 @@ function App() {
             />
           </Routes>
         </div>
-      </Router>
-    </AuthProvider>
-  );
-}
+      );
+    }
+
+    function App() {
+      return (
+        <AuthProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </AuthProvider>
+      );
+    }
 
 export default App;
