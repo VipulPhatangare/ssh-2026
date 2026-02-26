@@ -76,7 +76,6 @@ const uploadSchema = new mongoose.Schema({
 
 // Index for faster queries
 uploadSchema.index({ userId: 1, createdAt: -1 });
-uploadSchema.index({ uploadId: 1 });
 uploadSchema.index({ chatId: 1 });
 
 module.exports = mongoose.model('Upload', uploadSchema);
