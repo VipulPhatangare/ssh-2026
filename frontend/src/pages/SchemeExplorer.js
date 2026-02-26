@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
 import './SchemeExplorer.css';
 
 const SchemeExplorer = () => {
   const { t } = useTranslation();
+  const { user } = useContext(AuthContext);
   const [schemes, setSchemes] = useState([]);
+  const [eligibilityMap, setEligibilityMap] = useState({});
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,6 +19,13 @@ const SchemeExplorer = () => {
   useEffect(() => {
     fetchSchemes();
   }, [filter]);
+
+  // Fetch eligibility for all schemes when schemes load and user is logged in
+  useEffect(() => {
+    if (user?.id && schemes.length > 0) {
+      fetchAllEligibilities();
+    }
+  }, [schemes, user?.id]);
 
   const fetchSchemes = async () => {
     try {
@@ -34,6 +44,28 @@ const SchemeExplorer = () => {
       console.error('Error fetching schemes:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllEligibilities = async () => {
+    try {
+      const eligibilityPromises = schemes.map(scheme =>
+        api.get(`/schemes/check/${scheme._id}/${user.id}`)
+          .then(res => ({ schemeId: scheme._id, data: res.data }))
+          .catch(err => {
+            console.error(`Error fetching eligibility for scheme ${scheme._id}:`, err);
+            return { schemeId: scheme._id, data: null };
+          })
+      );
+
+      const results = await Promise.all(eligibilityPromises);
+      const map = {};
+      results.forEach(({ schemeId, data }) => {
+        map[schemeId] = data;
+      });
+      setEligibilityMap(map);
+    } catch (error) {
+      console.error('Error fetching eligibilities:', error);
     }
   };
 
@@ -63,6 +95,26 @@ const SchemeExplorer = () => {
       return departmentMatch && searchMatch;
     });
   }, [schemes, searchQuery, selectedDepartment]);
+
+  const getEligibilityBannerType = (schemeId) => {
+    const eligibility = eligibilityMap[schemeId];
+    if (!eligibility) return null;
+
+    if (eligibility.eligible) {
+      return 'fully-eligible';
+    }
+
+    if (eligibility.missingDocs && eligibility.missingDocs.length > 0 && 
+        (!eligibility.failedConditions || eligibility.failedConditions.length === 0)) {
+      return 'missing-docs';
+    }
+
+    if (eligibility.failedConditions && eligibility.failedConditions.length > 0) {
+      return 'not-eligible';
+    }
+
+    return null;
+  };
 
   const handleViewMore = (schemeId) => {
     navigate(`/schemes/${schemeId}`);
@@ -141,6 +193,35 @@ const SchemeExplorer = () => {
           ) : (
             filteredSchemes.map((scheme) => (
               <div key={scheme._id} className="scheme-card">
+                {/* ELIGIBILITY BANNER */}
+                {(() => {
+                  const bannerType = getEligibilityBannerType(scheme._id);
+                  if (!bannerType) return null;
+
+                  return (
+                    <div className={`scheme-card-banner banner-${bannerType}`}>
+                      {bannerType === 'fully-eligible' && (
+                        <div className="banner-content-compact">
+                          <span className="banner-icon">✓</span>
+                          <span className="banner-text">You are eligible</span>
+                        </div>
+                      )}
+                      {bannerType === 'missing-docs' && (
+                        <div className="banner-content-compact">
+                          <span className="banner-icon">⚠</span>
+                          <span className="banner-text">Missing documents</span>
+                        </div>
+                      )}
+                      {bannerType === 'not-eligible' && (
+                        <div className="banner-content-compact">
+                          <span className="banner-icon">✗</span>
+                          <span className="banner-text">Not eligible</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div className="scheme-header">
                   <div className="scheme-info">
                     <h3 className="scheme-name">{scheme.name}</h3>

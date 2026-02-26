@@ -137,13 +137,69 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* ===================================
+   SCHEME CARD ELIGIBILITY BANNER
+   =================================== */
+
 .scheme-card {
   background-color: white;
   border-radius: 8px;
-  padding: 25px;
+  overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   border-left: 4px solid #0066cc;
+}
+
+.scheme-card-banner {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Fully Eligible - Green Banner */
+.banner-fully-eligible {
+  background: linear-gradient(135deg, #d4edda 0%, #e8f5e9 100%);
+  border-bottom: 2px solid #28a745;
+  color: #155724;
+}
+
+/* Missing Documents - Yellow Banner */
+.banner-missing-docs {
+  background: linear-gradient(135deg, #fff3cd 0%, #fffaf0 100%);
+  border-bottom: 2px solid #ffc107;
+  color: #856404;
+}
+
+/* Not Eligible - Red Banner */
+.banner-not-eligible {
+  background: linear-gradient(135deg, #f8d7da 0%, #ffebee 100%);
+  border-bottom: 2px solid #dc3545;
+  color: #721c24;
+}
+
+.banner-content-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.scheme-card-banner .banner-icon {
+  font-size: 18px;
+  font-weight: bold;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scheme-card-banner .banner-text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .scheme-card:hover {
@@ -156,6 +212,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
+  padding: 25px;
 }
 
 .scheme-info {

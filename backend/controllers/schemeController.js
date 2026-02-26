@@ -1,3 +1,69 @@
+const checkEligibilityLogic = (user, scheme) => {
+  let failedConditions = [];
+  let missingDocs = [];
+
+  const { eligibility, requiredDocuments } = scheme;
+
+  // Age check
+  if (eligibility.ageMin && eligibility.ageMax) {
+    if (user.age < eligibility.ageMin || user.age > eligibility.ageMax) {
+      failedConditions.push(`Age must be between ${eligibility.ageMin}-${eligibility.ageMax} years (Your age: ${user.age} years)`);
+    }
+  }
+
+  // Income check (annualIncome field in User model)
+  if (
+    eligibility.incomeMax !== null &&
+    eligibility.incomeMax !== undefined &&
+    user.annualIncome > eligibility.incomeMax
+  ) {
+    failedConditions.push(`Annual income must not exceed ₹${eligibility.incomeMax} (Your income: ₹${user.annualIncome})`);
+  }
+
+  // Caste check (casteCategory field in User model)
+  if (
+    eligibility.casteCategories && 
+    eligibility.casteCategories.length > 0 &&
+    !eligibility.casteCategories.includes(user.casteCategory)
+  ) {
+    failedConditions.push(`Caste category: Must belong to ${eligibility.casteCategories.join('/')} (Your category: ${user.casteCategory})`);
+  }
+
+  // Gender check
+  if (
+    eligibility.gender && 
+    eligibility.gender.length > 0 &&
+    !eligibility.gender.includes(user.gender)
+  ) {
+    failedConditions.push(`Gender: Must be ${eligibility.gender.join('/')} (Your gender: ${user.gender})`);
+  }
+
+  // Occupation check
+  if (
+    eligibility.occupations && 
+    eligibility.occupations.length > 0 &&
+    !eligibility.occupations.includes(user.occupation)
+  ) {
+    failedConditions.push(`Occupation: Must be one of ${eligibility.occupations.join('/')} (Your occupation: ${user.occupation})`);
+  }
+
+  // Document check
+  if (requiredDocuments && Array.isArray(requiredDocuments)) {
+    requiredDocuments.forEach(doc => {
+      if (!user.documentsUploaded?.includes(doc)) {
+        missingDocs.push(doc);
+      }
+    });
+  }
+
+  return {
+    eligible: failedConditions.length === 0 && missingDocs.length === 0,
+    failedConditions,
+    missingDocs
+  };
+};
+
+
 const Scheme = require('../models/Scheme');
 const { 
   findEligibleSchemes, 
@@ -49,19 +115,35 @@ exports.getSchemeById = async (req, res, next) => {
 // @desc    Get eligible schemes for current user
 // @route   GET /api/schemes/eligible/me
 // @access  Private
-exports.getEligibleSchemes = async (req, res, next) => {
+exports.getEligibleSchemes = async (req, res) => {
   try {
-    const user = req.user;
-    const { eligible, all } = await findEligibleSchemes(user);
+    const user = req.user; // from protect middleware
+    const schemes = await Scheme.find({ isActive: true });
 
-    res.status(200).json({
-      success: true,
-      eligibleCount: eligible.length,
-      eligible: eligible,
-      recommended: all.slice(0, 10) // Top 10 recommended
+    const categorized = {
+      eligible: [],
+      partiallyEligible: [],
+      notEligible: []
+    };
+
+    schemes.forEach(scheme => {
+      const result = checkEligibilityLogic(user, scheme);
+
+      if (result.eligible) {
+        categorized.eligible.push({ scheme, result });
+      } else if (
+        result.failedConditions.length === 0 &&
+        result.missingDocs.length > 0
+      ) {
+        categorized.partiallyEligible.push({ scheme, result });
+      } else {
+        categorized.notEligible.push({ scheme, result });
+      }
     });
+
+    res.json(categorized);
   } catch (error) {
-    next(error);
+    res.status(500).json({ message: "Error fetching eligible schemes" });
   }
 };
 
@@ -104,10 +186,31 @@ exports.getSchemesByLifeEvent = async (req, res, next) => {
 // @desc    Check document availability for a scheme
 // @route   GET /api/schemes/:id/check-documents
 // @access  Private
-exports.checkSchemeDocuments = async (req, res, next) => {
+exports.checkSchemeDocuments = async (req, res) => {
   try {
+    const user = req.user;
     const scheme = await Scheme.findById(req.params.id);
+
+    const result = checkEligibilityLogic(user, scheme);
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: "Error checking scheme documents" });
+  }
+};
+
+// @desc    Check eligibility for a specific scheme (for a specific user)
+// @route   GET /api/schemes/check/:schemeId/:userId
+// @access  Public
+exports.checkSchemeEligibility = async (req, res) => {
+  try {
+    const { schemeId, userId } = req.params;
+    const User = require('../models/User');
     
+    // Fetch scheme and user
+    const scheme = await Scheme.findById(schemeId);
+    const user = await User.findById(userId);
+
     if (!scheme) {
       return res.status(404).json({
         success: false,
@@ -115,17 +218,32 @@ exports.checkSchemeDocuments = async (req, res, next) => {
       });
     }
 
-    const documentStatus = await checkDocumentAvailability(
-      req.user._id, 
-      scheme.requiredDocuments
-    );
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
 
-    res.status(200).json({
-      success: true,
-      data: documentStatus
-    });
+    // Check eligibility
+    const result = checkEligibilityLogic(user, scheme);
+
+    // Format response with detailed information
+    const response = {
+      schemeId: scheme._id,
+      schemeName: scheme.name,
+      eligible: result.eligible,
+      failedConditions: result.failedConditions.length > 0 ? result.failedConditions : [],
+      missingDocs: result.missingDocs.length > 0 ? result.missingDocs : []
+    };
+
+    res.status(200).json(response);
   } catch (error) {
-    next(error);
+    console.error('Error checking scheme eligibility:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking scheme eligibility'
+    });
   }
 };
 

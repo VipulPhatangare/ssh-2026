@@ -7,6 +7,7 @@ const {
   getUnclaimedSchemes,
   getSchemesByLifeEvent,
   checkSchemeDocuments,
+  checkSchemeEligibility,
   createScheme,
   updateScheme,
   deleteScheme,
@@ -17,6 +18,7 @@ const { protect, authorize } = require('../middleware/auth');
 // Public routes
 router.get('/', getAllSchemes);
 router.get('/life-event/:event', getSchemesByLifeEvent);
+router.get('/check/:schemeId/:userId', checkSchemeEligibility);
 router.post('/:id/chat', chatAboutScheme);
 router.get('/:id', getSchemeById);
 
