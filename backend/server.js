@@ -4,10 +4,10 @@ const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
-const path = require('path');
-const fs = require('fs');
+const { initGridFS } = require('./config/gridfs');
 
 // Load env vars
 dotenv.config();
@@ -16,6 +16,16 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// Initialize GridFS after MongoDB connection is ready
+mongoose.connection.once('open', () => {
+  try {
+    initGridFS(mongoose.connection);
+    console.log('✓ GridFS initialized successfully');
+  } catch (error) {
+    console.error('Error initializing GridFS:', error.message);
+  }
+});
 
 // Security middleware
 app.use(helmet());
@@ -51,14 +61,12 @@ app.use(express.urlencoded({ extended: true }));
 // Cookie parser
 app.use(cookieParser());
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Middleware to make GridFS bucket available to routes
+app.use((req, res, next) => {
+  // GridFS bucket will be available after MongoDB connection
+  // Routes that need it will check if it exists
+  next();
+});
 
 // Mount routes
 app.use('/api/auth', require('./routes/authRoutes'));

@@ -76,6 +76,75 @@ const userSchema = new mongoose.Schema({
       message: 'Samagra ID must be 9 digits'
     }
   },
+  // ===== OPTIONAL GOVERNMENT IDENTITY FIELDS =====
+  // Note: These fields are optional and prepared for future encryption
+  aadhaarNumber: {
+    type: String,
+    default: null,
+    validate: {
+      validator: function(v) {
+        if (!v) return true;
+        // 12 digit Aadhaar validation
+        return /^\d{12}$/.test(v);
+      },
+      message: 'Aadhaar number must be 12 digits'
+    }
+    // TODO: Add encryption before storing in production
+  },
+  panNumber: {
+    type: String,
+    default: null,
+    validate: {
+      validator: function(v) {
+        if (!v) return true;
+        // PAN format: ABCDE1234F (5 letters, 4 numbers, 1 letter)
+        return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v);
+      },
+      message: 'PAN must be in format: ABCDE1234F'
+    }
+    // TODO: Add encryption before storing in production
+  },
+  passportNumber: {
+    type: String,
+    default: null
+    // TODO: Add validation and encryption
+  },
+  drivingLicenseNumber: {
+    type: String,
+    default: null
+    // TODO: Add validation and encryption
+  },
+  voterIdNumber: {
+    type: String,
+    default: null
+    // TODO: Add encryption before storing in production
+  },
+  rationCardNumber: {
+    type: String,
+    default: null
+    // TODO: Add encryption before storing in production
+  },
+  governmentEmployeeId: {
+    type: String,
+    default: null
+  },
+  // ===== DOCUMENT UPLOADS (GridFS File IDs) =====
+  // Store GridFS file IDs instead of file paths
+  incomeCertificate: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null,
+    ref: 'uploads.files'
+  },
+  domicileCertificate: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null,
+    ref: 'uploads.files'
+  },
+  casteCertificate: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null,
+    ref: 'uploads.files'
+  },
   role: {
     type: String,
     enum: ['Citizen', 'Admin'],
@@ -105,5 +174,15 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.comparePassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
-
+// Exclude sensitive fields from responses
+userSchema.methods.toJSON = function() {
+  const user = this.toObject();
+  // Note: DO NOT expose sensitive IDs in API responses
+  // Remove or mask sensitive fields before sending to client
+  delete user.password;
+  // Optional: Mask sensitive IDs for security
+  // if (user.aadhaarNumber) user.aadhaarNumber = 'XXXX-XXXX-' + user.aadhaarNumber.slice(-4);
+  // if (user.panNumber) user.panNumber = user.panNumber.slice(0, 5) + '****' + user.panNumber.slice(-1);
+  return user;
+};
 module.exports = mongoose.model('User', userSchema);

@@ -14,8 +14,17 @@ const Register = () => {
     annualIncome: '',
     occupation: '',
     district: '',
-    samagraId: ''
+    samagraId: '',
+    // Optional government identity fields
+    aadhaarNumber: '',
+    panNumber: '',
+    passportNumber: '',
+    drivingLicenseNumber: '',
+    voterIdNumber: '',
+    rationCardNumber: '',
+    governmentEmployeeId: ''
   });
+  const [showGovDetails, setShowGovDetails] = useState(false);
   const [error, setError] = useState('');
   const { register } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -48,7 +57,7 @@ const Register = () => {
     const result = await register(formData);
     
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/');
     } else {
       setError(result.message);
     }
@@ -202,6 +211,115 @@ const Register = () => {
                 placeholder="9-digit Samagra ID"
               />
             </div>
+          </div>
+
+          {/* OPTIONAL GOVERNMENT DETAILS SECTION */}
+          <div className="optional-section">
+            <button
+              type="button"
+              className="toggle-button"
+              onClick={() => setShowGovDetails(!showGovDetails)}
+            >
+              <span className="toggle-icon">{showGovDetails ? '▼' : '▶'}</span>
+              Additional Government Details (Optional)
+            </button>
+
+            {showGovDetails && (
+              <div className="gov-details-container">
+                <p className="helper-text">
+                  Providing these details helps in eligibility matching but is not mandatory.
+                </p>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Aadhaar Number (Optional)</label>
+                    <input
+                      type="text"
+                      name="aadhaarNumber"
+                      value={formData.aadhaarNumber}
+                      onChange={handleChange}
+                      placeholder="12-digit Aadhaar number"
+                      pattern="[0-9]{12}"
+                    />
+                    <small>12 digits only</small>
+                  </div>
+
+                  <div className="form-group">
+                    <label>PAN Number (Optional)</label>
+                    <input
+                      type="text"
+                      name="panNumber"
+                      value={formData.panNumber}
+                      onChange={handleChange}
+                      placeholder="ABCDE1234F"
+                      pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
+                    />
+                    <small>Format: ABCDE1234F</small>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Passport Number (Optional)</label>
+                    <input
+                      type="text"
+                      name="passportNumber"
+                      value={formData.passportNumber}
+                      onChange={handleChange}
+                      placeholder="Passport number"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Driving License Number (Optional)</label>
+                    <input
+                      type="text"
+                      name="drivingLicenseNumber"
+                      value={formData.drivingLicenseNumber}
+                      onChange={handleChange}
+                      placeholder="Driving license number"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Voter ID Number (Optional)</label>
+                    <input
+                      type="text"
+                      name="voterIdNumber"
+                      value={formData.voterIdNumber}
+                      onChange={handleChange}
+                      placeholder="Voter ID number"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Ration Card Number (Optional)</label>
+                    <input
+                      type="text"
+                      name="rationCardNumber"
+                      value={formData.rationCardNumber}
+                      onChange={handleChange}
+                      placeholder="Ration card number"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Government Employee ID (Optional)</label>
+                    <input
+                      type="text"
+                      name="governmentEmployeeId"
+                      value={formData.governmentEmployeeId}
+                      onChange={handleChange}
+                      placeholder="Government employee ID"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <button type="submit" className="btn btn-primary btn-block">

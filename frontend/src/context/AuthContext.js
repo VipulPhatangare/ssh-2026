@@ -68,13 +68,28 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (profileData) => {
     try {
       setError(null);
-      const response = await api.put('/auth/update-profile', profileData);
+      // Handle both FormData (with file uploads) and regular object
+      const config = {};
+      if (profileData instanceof FormData) {
+        config.headers = { 'Content-Type': 'multipart/form-data' };
+      }
+      const response = await api.put('/auth/update-profile', profileData, config);
       setUser(response.data.data);
       return { success: true };
     } catch (err) {
       const message = err.response?.data?.message || 'Update failed';
       setError(message);
       return { success: false, message };
+    }
+  };
+
+  // Re-fetch the current user from the server (useful after direct mutations)
+  const refreshUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      setUser(response.data.data);
+    } catch (err) {
+      console.error('Failed to refresh user:', err);
     }
   };
 
@@ -87,7 +102,8 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        updateProfile
+        updateProfile,
+        refreshUser
       }}
     >
       {children}
