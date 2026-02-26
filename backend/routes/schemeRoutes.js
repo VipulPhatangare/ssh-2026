@@ -9,13 +9,15 @@ const {
   checkSchemeDocuments,
   createScheme,
   updateScheme,
-  deleteScheme
+  deleteScheme,
+  chatAboutScheme
 } = require('../controllers/schemeController');
 const { protect, authorize } = require('../middleware/auth');
 
 // Public routes
 router.get('/', getAllSchemes);
 router.get('/life-event/:event', getSchemesByLifeEvent);
+router.post('/:id/chat', chatAboutScheme);
 router.get('/:id', getSchemeById);
 
 // Protected routes

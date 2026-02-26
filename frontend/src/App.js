@@ -12,7 +12,6 @@ import AIAssistantPage from './pages/AIAssistantPage';
 import Profile from './pages/Profile';
 import SchemeExplorer from './pages/SchemeExplorer';
 import SchemeDetails from './pages/SchemeDetails';
-import LifeEventPage from './pages/LifeEventPage';
 import ApplicationTracker from './pages/ApplicationTracker';
 import GrievancePage from './pages/GrievancePage';
 import AdminPanel from './pages/AdminPanel';
@@ -76,14 +75,6 @@ function AppContent() {
               element={
                 <PrivateRoute>
                   <SchemeDetails />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/life-events" 
-              element={
-                <PrivateRoute>
-                  <LifeEventPage />
                 </PrivateRoute>
               } 
             />

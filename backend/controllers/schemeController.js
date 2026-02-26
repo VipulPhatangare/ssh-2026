@@ -193,3 +193,97 @@ exports.deleteScheme = async (req, res, next) => {
     next(error);
   }
 };
+// @desc    Chat with AI about a scheme
+// @route   POST /api/schemes/:id/chat
+// @access  Public
+exports.chatAboutScheme = async (req, res, next) => {
+  try {
+    const { chat, scheme } = req.body;
+    const { id } = req.params;
+
+    // Validate required fields
+    if (!chat || !chat.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Chat message is required'
+      });
+    }
+
+    // Get scheme details
+    const schemeData = await Scheme.findById(id);
+    if (!schemeData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Scheme not found'
+      });
+    }
+
+    // Print scheme data to terminal
+    // console.log('\n========== SCHEME DATA ==========');
+    // console.log('Scheme ID:', schemeData._id);
+    // console.log('Scheme Code:', schemeData.schemeId || '(fallback to MongoDB ID)');
+    // console.log('Scheme Name:', schemeData.name);
+    // console.log('Department:', schemeData.department);
+    // console.log('Description:', schemeData.description);
+    // console.log('Benefits:', schemeData.benefits);
+    // console.log('Required Documents:', schemeData.requiredDocuments);
+    // console.log('Eligibility:', schemeData.eligibility);
+    // console.log('Apply URL:', schemeData.applyUrl);
+    // console.log('Is Active:', schemeData.isActive);
+    // console.log('=====================================\n');
+
+    // Send request to n8n webhook
+    const webhookUrl = 'https://synthomind.cloud/webhook/shceme-1';
+    const payload = {
+      chat: chat.trim(),
+      scheme: schemeData.name || scheme || '',
+      schemeId: schemeData.schemeId 
+      // Send all scheme document data
+
+    };
+
+    // Print payload to terminal
+    console.log('\n========== WEBHOOK PAYLOAD ==========');
+    console.log(JSON.stringify(payload, null, 2));
+    console.log('=====================================\n');
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Webhook returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Print webhook response to terminal
+      console.log('\n========== WEBHOOK RESPONSE ==========');
+      console.log(JSON.stringify(data, null, 2));
+      console.log('=====================================\n');
+
+      res.status(200).json({
+        success: true,
+        output: data.output || 'Unable to process your question. Please try again.',
+        data: data,
+      });
+    } catch (webhookError) {
+      console.error('\n========== WEBHOOK ERROR ==========');
+      console.error('Error Message:', webhookError.message);
+      console.error('Error Stack:', webhookError.stack);
+      console.error('=====================================\n');
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get response from AI service',
+        error: webhookError.message,
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
