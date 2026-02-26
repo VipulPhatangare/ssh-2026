@@ -67,6 +67,7 @@ app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/grievances', require('./routes/grievanceRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/ai', require('./routes/uploadRoutes'));
 
 // Health check route
 app.get('/api/health', (req, res) => {

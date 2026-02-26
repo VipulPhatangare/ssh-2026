@@ -1,6 +1,17 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
 import './AIAssistantPage.css';
+
+// ─── N8N Webhook Configuration ───────────────────────────────────────────────
+const N8N_WEBHOOK_URL = 'https://synthomind.cloud/webhook/ssh-2026-main-chat-bot';
+
+// ─── UI limits ───────────────────────────────────────────────────────────────
+const MAX_SCHEMES_IN_CHAT = 4;
+
+// ─── Generate unique IDs ──────────────────────────────────────────────────────
+const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const generateChatId = () => `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // ─── Dummy chat history ───────────────────────────────────────────────────────
 const HISTORY_ITEMS = [
@@ -60,6 +71,48 @@ const getBotReply = (text) => {
   return reply;
 };
 
+// ─── Send data to backend for processing ─────────────────────────────────────────
+const uploadToBackend = async (file, message, chatId, sessionId) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('message', message);
+    formData.append('chatId', chatId);
+    formData.append('sessionId', sessionId);
+
+    const token = localStorage.getItem('token');
+    const response = await axios.post('http://localhost:5000/api/ai/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    console.log('✅ File uploaded to backend:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Upload error:', error);
+    return null;
+  }
+};
+
+// ─── Send text-only data to N8N webhook and get response ───────────────────────
+const sendToWebhook = async (payload) => {
+  try {
+    console.log('📤 Sending to webhook:', payload);
+    const response = await axios.post(N8N_WEBHOOK_URL, payload, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    console.log('✅ Webhook responded with status:', response.status);
+    console.log('📦 Raw response data:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Webhook error:', error);
+    console.error('❌ Error response:', error.response?.data);
+    return null;
+  }
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 const AIAssistantPage = () => {
   const { user } = useContext(AuthContext);
@@ -73,10 +126,13 @@ const AIAssistantPage = () => {
   const [isHindi, setIsHindi]           = useState(false);
   const [dragOver, setDragOver]         = useState(false);
   const [searchQuery, setSearchQuery]   = useState('');
+  const [sessionId]                    = useState(() => generateSessionId());
+  const [uploadedFile, setUploadedFile] = useState(null);
 
   const messagesEndRef  = useRef(null);
   const textareaRef     = useRef(null);
   const fileInputRef    = useRef(null);
+  const recognitionRef  = useRef(null);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -94,36 +150,173 @@ const AIAssistantPage = () => {
   };
 
   // ─── Send a message ──────────────────────────────────────────────────────────
-  const sendMessage = (text = input, imageUrl = null) => {
+  const sendMessage = async (text = input, fileData = uploadedFile) => {
     const trimmed = text.trim();
-    if (!trimmed && !imageUrl) return;
+    if (!trimmed && !fileData) return;
 
+    const chatId = generateChatId();
     const userMsg = {
       id: Date.now(),
       role: 'user',
       content: trimmed,
-      image: imageUrl,
+      file: fileData,
       time: getTime(),
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    setUploadedFile(null);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
-    // Bot thinking…
+    // If file exists, upload to backend (handles Cloudinary, PDF extraction, n8n)
+    if (fileData && fileData.file) {
+      setIsTyping(true);
+      const uploadResult = await uploadToBackend(fileData.file, trimmed, chatId, sessionId);
+      setIsTyping(false);
+
+      if (uploadResult) {
+        console.log('✅ Upload successful:', uploadResult.uploadId);
+
+        const n8nResponse = uploadResult.n8nResponse;
+        console.log('📥 N8N Response (upload):', n8nResponse);
+
+        // Handle different response formats (same as text-only)
+        let aiResponse = null;
+        let schemes = [];
+
+        if (n8nResponse) {
+          if (Array.isArray(n8nResponse) && n8nResponse.length > 0) {
+            aiResponse = n8nResponse[0].response;
+            schemes = n8nResponse[0].schemes || [];
+          } else if (typeof n8nResponse === 'object' && n8nResponse.response) {
+            aiResponse = n8nResponse.response;
+            schemes = n8nResponse.schemes || [];
+          } else if (typeof n8nResponse === 'string') {
+            aiResponse = n8nResponse;
+          }
+        }
+
+        // Limit the number of schemes shown in the chat UI
+        if (Array.isArray(schemes)) {
+          schemes = schemes.slice(0, MAX_SCHEMES_IN_CHAT);
+        }
+
+        if (aiResponse) {
+          const botMsg = {
+            id: Date.now() + 1,
+            role: 'bot',
+            content: aiResponse,
+            schemes: schemes || [],
+            time: getTime(),
+          };
+          setMessages(prev => [...prev, botMsg]);
+          return;
+        }
+
+        // If webhook failed or didn't return an AI response, still acknowledge upload
+        const botMsg = {
+          id: Date.now() + 1,
+          role: 'bot',
+          content: uploadResult.webhookSuccess
+            ? '📎 File uploaded successfully, but I did not receive a readable AI response. Please try again.'
+            : '📎 File uploaded successfully, but the AI service did not respond. Please try again in a moment.',
+          schemes: [],
+          time: getTime(),
+        };
+        setMessages(prev => [...prev, botMsg]);
+        return;
+      }
+
+      // Upload failed
+      const botMsg = {
+        id: Date.now() + 1,
+        role: 'bot',
+        content: '❌ Upload failed. Please check your internet connection and try again.',
+        schemes: [],
+        time: getTime(),
+      };
+      setMessages(prev => [...prev, botMsg]);
+      return;
+    } else {
+      // Text-only message - send directly to n8n and get AI response
+      const webhookPayload = {
+        chatId,
+        sessionId,
+        userId: user?._id || 'guest',
+        userName: user?.fullName || 'Guest User',
+        message: trimmed,
+        timestamp: new Date().toISOString(),
+        fileType: null,
+        fileName: null,
+        imageUrl: 'No',
+        pdfText: 'No',
+      };
+      
+      setIsTyping(true);
+      const n8nResponse = await sendToWebhook(webhookPayload);
+      setIsTyping(false);
+
+      console.log('📥 N8N Response:', n8nResponse);
+      console.log('📊 Response type:', typeof n8nResponse);
+      console.log('📋 Is array:', Array.isArray(n8nResponse));
+      console.log('📄 Full response:', JSON.stringify(n8nResponse, null, 2));
+
+      // Handle different response formats
+      let aiResponse = null;
+      let schemes = [];
+
+      if (n8nResponse) {
+        // Case 1: Response is an array
+        if (Array.isArray(n8nResponse) && n8nResponse.length > 0) {
+          aiResponse = n8nResponse[0].response;
+          schemes = n8nResponse[0].schemes || [];
+        }
+        // Case 2: Response is a single object
+        else if (n8nResponse.response) {
+          aiResponse = n8nResponse.response;
+          schemes = n8nResponse.schemes || [];
+        }
+      }
+
+      // Limit the number of schemes shown in the chat UI
+      if (Array.isArray(schemes)) {
+        schemes = schemes.slice(0, MAX_SCHEMES_IN_CHAT);
+      }
+
+      console.log('✅ Extracted AI Response:', aiResponse);
+      console.log('📋 Extracted Schemes:', schemes);
+
+      if (aiResponse) {
+        const botMsg = {
+          id: Date.now() + 1,
+          role: 'bot',
+          content: aiResponse,
+          schemes: schemes || [],
+          time: getTime(),
+        };
+        setMessages(prev => [...prev, botMsg]);
+        return;
+      } else {
+        console.log('⚠️ No AI response found in n8n data');
+      }
+    }
+
+    // Fallback for file uploads or when n8n doesn't respond
+    console.log('🔄 Using fallback response');
     setIsTyping(true);
     const delay = 1500 + Math.random() * 500;
     setTimeout(() => {
       setIsTyping(false);
-      const replyText = imageUrl
-        ? "🖼️ I can see your uploaded image! It looks like it shows a civic issue. I've noted it in your complaint. Would you like me to register a formal complaint?"
+      const replyText = fileData
+        ? `📎 I received your ${fileData.type.includes('pdf') ? 'PDF document' : 'image'}! I've processed it and forwarded to the AI assistant. Analysis will be ready shortly.`
         : getBotReply(trimmed);
 
       const botMsg = {
         id: Date.now() + 1,
         role: 'bot',
         content: replyText,
-        image: null,
+        file: null,
+        schemes: [],
         time: getTime(),
       };
       setMessages(prev => [...prev, botMsg]);
@@ -138,15 +331,50 @@ const AIAssistantPage = () => {
     }
   };
 
-  // ─── Image upload ────────────────────────────────────────────────────────────
-  const handleImageFile = (file) => {
-    if (!file || !file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => sendMessage('[Image uploaded]', ev.target.result);
-    reader.readAsDataURL(file);
+  // ─── File upload (Images & PDFs) ─────────────────────────────────────────────
+  const handleFileUpload = (file) => {
+    if (!file) return;
+    
+    // Validate file type
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+    if (!isImage && !isPDF) {
+      alert('Please upload only images (JPEG, PNG) or PDF files');
+      return;
+    }
+    
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+
+    // Create preview URL for images only
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setUploadedFile({
+          file: file, // Store raw file for backend upload
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          preview: ev.target.result, // For display only
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // PDF - no preview needed
+      setUploadedFile({
+        file: file, // Store raw file for backend upload
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        preview: null,
+      });
+    }
   };
 
-  const handleFileInput = (e) => handleImageFile(e.target.files[0]);
+  const handleFileInput = (e) => handleFileUpload(e.target.files[0]);
 
   // ─── Drag & Drop ─────────────────────────────────────────────────────────────
   const handleDragOver = (e) => { e.preventDefault(); setDragOver(true); };
@@ -154,21 +382,50 @@ const AIAssistantPage = () => {
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
-    handleImageFile(e.dataTransfer.files[0]);
+    handleFileUpload(e.dataTransfer.files[0]);
   };
 
-  // ─── Voice toggle ─────────────────────────────────────────────────────────────
+  // ─── Voice toggle (Web Speech API) ───────────────────────────────────────────
   const toggleRecording = () => {
-    setIsRecording(prev => {
-      if (!prev) {
-        // Simulate voice input ending after 3s
-        setTimeout(() => {
-          setIsRecording(false);
-          sendMessage(isHindi ? 'पोटहोल की शिकायत दर्ज करें' : 'Report a pothole near my area');
-        }, 3000);
-      }
-      return !prev;
-    });
+    if (!('webkitSpeechRecognition' in window)) {
+      alert('Speech recognition not supported in this browser');
+      return;
+    }
+
+    if (isRecording) {
+      // Stop recording
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      // Start recording
+      const SpeechRecognition = window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = isHindi ? 'hi-IN' : 'en-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsRecording(false);
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    }
   };
 
   // ─── New chat ─────────────────────────────────────────────────────────────────
@@ -212,7 +469,26 @@ const AIAssistantPage = () => {
       {/* Drag overlay */}
       {dragOver && (
         <div className="ai-drag-overlay">
-          📷 Drop image here to attach
+          � Drop image or PDF here to attach
+        </div>
+      )}
+
+      {/* File preview */}
+      {uploadedFile && (
+        <div className="ai-file-preview">
+          <div className="ai-file-preview-content">
+            <span className="ai-file-icon">
+              {uploadedFile.type.includes('pdf') ? '📄' : '🖼️'}
+            </span>
+            <span className="ai-file-name">{uploadedFile.name}</span>
+            <button
+              className="ai-file-remove"
+              onClick={() => setUploadedFile(null)}
+              aria-label="Remove file"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
@@ -340,14 +616,52 @@ const AIAssistantPage = () => {
                     </div>
                     <div className="ai-bubble-wrap">
                       <div className="ai-bubble">
-                        {msg.image && (
-                          <img
-                            src={msg.image}
-                            alt="Uploaded"
-                            className="ai-msg-image"
-                          />
+                        {msg.file && (
+                          <div className="ai-msg-file">
+                            {msg.file.type.includes('pdf') ? (
+                              <div className="ai-pdf-preview">
+                                <span className="ai-pdf-icon">📄</span>
+                                <span className="ai-pdf-name">{msg.file.name}</span>
+                              </div>
+                            ) : (
+                              <img
+                                src={msg.file.preview || msg.file.base64}
+                                alt="Uploaded"
+                                className="ai-msg-image"
+                              />
+                            )}
+                          </div>
                         )}
                         {msg.content}
+                        
+                        {/* Scheme Cards */}
+                        {msg.schemes && msg.schemes.length > 0 && (
+                          <div className="ai-schemes-container">
+                            {(msg.schemes || []).slice(0, MAX_SCHEMES_IN_CHAT).map((scheme, idx) => (
+                              <div key={idx} className="ai-scheme-card">
+                                <div className="ai-scheme-header">
+                                  <span className="ai-scheme-icon">📋</span>
+                                  <h4 className="ai-scheme-name">{scheme.scheme_name}</h4>
+                                </div>
+                                <div className="ai-scheme-actions">
+                                  <button
+                                    className="ai-scheme-btn ai-apply-btn"
+                                    onClick={() => window.open(scheme.official_link, '_blank')}
+                                    disabled={!scheme.official_link}
+                                  >
+                                    Apply Now →
+                                  </button>
+                                  <button
+                                    className="ai-scheme-btn ai-know-more-btn"
+                                    onClick={() => window.location.href = `/schemes/${scheme.schemeId}`}
+                                  >
+                                    Know More
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <p className="ai-msg-time">{msg.time}</p>
                     </div>
@@ -387,15 +701,15 @@ const AIAssistantPage = () => {
               <button
                 className="ai-input-btn"
                 onClick={() => fileInputRef.current?.click()}
-                aria-label="Upload image"
-                title="Upload image"
+                aria-label="Upload file"
+                title="Upload image or PDF"
               >
-                📷
+                📎
               </button>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf"
                 style={{ display: 'none' }}
                 onChange={handleFileInput}
               />
@@ -424,9 +738,9 @@ const AIAssistantPage = () => {
 
               {/* Send button */}
               <button
-                className={`ai-send-btn ${input.trim() ? 'active' : 'inactive'}`}
+                className={`ai-send-btn ${input.trim() || uploadedFile ? 'active' : 'inactive'}`}
                 onClick={() => sendMessage()}
-                disabled={!input.trim()}
+                disabled={!input.trim() && !uploadedFile}
                 aria-label="Send message"
                 title="Send"
               >

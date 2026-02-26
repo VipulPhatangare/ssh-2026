@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getAllSchemes,
   getSchemeById,
+  resolveSchemeId,
   getEligibleSchemes,
   getUnclaimedSchemes,
   getSchemesByLifeEvent,
@@ -16,6 +17,7 @@ const { protect, authorize } = require('../middleware/auth');
 
 // Public routes
 router.get('/', getAllSchemes);
+router.get('/resolve/:schemeId', resolveSchemeId);
 router.get('/life-event/:event', getSchemesByLifeEvent);
 router.post('/:id/chat', chatAboutScheme);
 router.get('/:id', getSchemeById);

@@ -23,12 +23,22 @@ exports.getAllSchemes = async (req, res, next) => {
   }
 };
 
-// @desc    Get scheme by ID
+// @desc    Get scheme by ID or schemeId
 // @route   GET /api/schemes/:id
 // @access  Public
 exports.getSchemeById = async (req, res, next) => {
   try {
-    const scheme = await Scheme.findById(req.params.id);
+    let scheme;
+    
+    // Try to find by MongoDB _id first
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      scheme = await Scheme.findById(req.params.id);
+    }
+    
+    // If not found or not a valid ObjectId, try to find by schemeId
+    if (!scheme) {
+      scheme = await Scheme.findOne({ schemeId: req.params.id });
+    }
 
     if (!scheme) {
       return res.status(404).json({
@@ -40,6 +50,42 @@ exports.getSchemeById = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: scheme
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Resolve MongoDB _id from schemeId
+// @route   GET /api/schemes/resolve/:schemeId
+// @access  Public
+exports.resolveSchemeId = async (req, res, next) => {
+  try {
+    const { schemeId } = req.params;
+
+    if (!schemeId || !schemeId.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'schemeId is required'
+      });
+    }
+
+    const scheme = await Scheme.findOne({ schemeId: schemeId.trim() }).select('_id schemeId name');
+
+    if (!scheme) {
+      return res.status(404).json({
+        success: false,
+        message: 'Scheme not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        _id: scheme._id,
+        schemeId: scheme.schemeId,
+        name: scheme.name
+      }
     });
   } catch (error) {
     next(error);
@@ -209,8 +255,14 @@ exports.chatAboutScheme = async (req, res, next) => {
       });
     }
 
-    // Get scheme details
-    const schemeData = await Scheme.findById(id);
+    // Get scheme details - support both MongoDB _id and schemeId
+    let schemeData;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      schemeData = await Scheme.findById(id);
+    }
+    if (!schemeData) {
+      schemeData = await Scheme.findOne({ schemeId: id });
+    }
     if (!schemeData) {
       return res.status(404).json({
         success: false,

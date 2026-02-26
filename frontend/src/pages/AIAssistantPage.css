@@ -679,6 +679,216 @@
   animation: fadeSlideIn 0.2s ease;
 }
 
+/* ──────────── File Preview ──────────── */
+.ai-file-preview {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  z-index: 10;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.ai-file-preview-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-file-icon {
+  font-size: 24px;
+}
+
+.ai-file-name {
+  font-size: 13px;
+  color: #e2e8f0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-file-remove {
+  background: rgba(239,68,68,0.2);
+  border: none;
+  color: #f87171;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.ai-file-remove:hover {
+  background: rgba(239,68,68,0.3);
+  transform: scale(1.1);
+}
+
+/* ──────────── Message File Display ──────────── */
+.ai-msg-file {
+  margin-bottom: 8px;
+}
+
+.ai-msg-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 10px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.ai-msg-image:hover {
+  transform: scale(1.02);
+}
+
+.ai-pdf-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.ai-pdf-icon {
+  font-size: 28px;
+}
+
+.ai-pdf-name {
+  font-size: 13px;
+  color: #a5b4fc;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ──────────── Scheme Cards ──────────── */
+.ai-schemes-container {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-scheme-card {
+  background: rgba(99,102,241,0.08);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+  animation: slideIn 0.4s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-scheme-card:hover {
+  background: rgba(99,102,241,0.12);
+  border-color: rgba(99,102,241,0.4);
+  transform: translateY(-2px);
+}
+
+.ai-scheme-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ai-scheme-icon {
+  font-size: 24px;
+}
+
+.ai-scheme-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ai-scheme-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-scheme-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ai-apply-btn {
+  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+}
+
+.ai-apply-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99,102,241,0.45);
+}
+
+.ai-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-know-more-btn {
+  background: rgba(255,255,255,0.08);
+  color: #a5b4fc;
+  border: 1px solid rgba(99,102,241,0.3);
+}
+
+.ai-know-more-btn:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(99,102,241,0.5);
+  transform: translateY(-2px);
+}
+
 /* ──────────── Mobile Overlay Sidebar ──────────── */
 .ai-sidebar-overlay {
   display: none;
