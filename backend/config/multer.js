@@ -1,34 +1,113 @@
 const multer = require('multer');
 const path = require('path');
+const mongoose = require('mongoose');
 
-// Configure storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+// GridFS Storage engine for Multer
+class GridFSStorage {
+  constructor(bucket) {
+    this.bucket = bucket;
   }
-});
 
-// File filter
+  _handleFile(req, file, cb) {
+    if (!this.bucket) {
+      return cb(new Error('GridFS bucket not available'));
+    }
+
+    const filename = `${Date.now()}-${file.originalname}`;
+    
+    // Create upload stream
+    const uploadStream = this.bucket.openUploadStream(filename, {
+      metadata: {
+        originalName: file.originalname,
+        uploadedAt: new Date(),
+        userId: req.user?.id || null,
+        mimeType: file.mimetype
+      }
+    });
+
+    // Capture the file ID from the stream (it's set when stream is created)
+    const fileId = uploadStream.id.toString();
+
+    // Pipe file to GridFS
+    file.stream
+      .pipe(uploadStream)
+      .on('finish', () => {
+        // uploadStream finished writing successfully
+        cb(null, {
+          id: fileId,
+          filename: filename,
+          size: uploadStream.bytesWritten || 0,
+          contentType: file.mimetype
+        });
+      })
+      .on('error', (error) => {
+        cb(error);
+      });
+  }
+
+  _removeFile(req, file, cb) {
+    if (!this.bucket || !file.id) {
+      return cb(null);
+    }
+
+    try {
+      const objectId = new mongoose.Types.ObjectId(file.id);
+      this.bucket.delete(objectId, (err) => {
+        if (err) {
+          console.warn('Warning: Could not delete file from GridFS:', err.message);
+          return cb(null); // Don't fail if cleanup fails
+        }
+        cb(null);
+      });
+    } catch (error) {
+      console.warn('Warning: Error deleting file:', error.message);
+      cb(null);
+    }
+  }
+}
+
+// File filter for PDF only
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|pdf/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (mimetype && extname) {
-    return cb(null, true);
+  // Only allow PDF files
+  if (file.mimetype === 'application/pdf') {
+    cb(null, true);
   } else {
-    cb(new Error('Only images (JPEG, JPG, PNG) and PDF files are allowed'));
+    cb(new Error('Only PDF files are allowed'), false);
   }
 };
 
+// Create storage with GridFS bucket
+const createStorage = (bucket) => {
+  return new GridFSStorage(bucket);
+};
+
+// General file upload (uses memory storage for non-government documents)
+const basicMemoryStorage = multer.memoryStorage();
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: fileFilter
+  storage: basicMemoryStorage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-module.exports = upload;
+// Document upload middleware for government documents
+// Bucket will be injected via route middleware
+const documentUpload = (bucket) => {
+  const storage = createStorage(bucket);
+  
+  return multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: fileFilter
+  }).fields([
+    { name: 'incomeCertificate', maxCount: 1 },
+    { name: 'domicileCertificate', maxCount: 1 },
+    { name: 'casteCertificate', maxCount: 1 }
+  ]);
+};
+
+module.exports = {
+  GridFSStorage,
+  upload,
+  documentUpload,
+  fileFilter
+};
+

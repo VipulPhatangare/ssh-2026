@@ -9,7 +9,7 @@ const {
   verifyDocument
 } = require('../controllers/documentController');
 const { protect, authorize } = require('../middleware/auth');
-const upload = require('../config/multer');
+const { upload } = require('../config/multer');
 
 router.post('/upload', protect, upload.single('document'), uploadDocument);
 router.get('/my-documents', protect, getMyDocuments);
