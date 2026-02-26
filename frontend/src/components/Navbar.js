@@ -29,6 +29,10 @@ const Navbar = () => {
                 <Link to="/life-events" className="nav-link">Life Events</Link>
                 <Link to="/applications" className="nav-link">Applications</Link>
                 <Link to="/grievances" className="nav-link">Grievances</Link>
+                <Link to="/assistant" className="nav-link ai-nav-link">
+                  🤖 AI Assistant
+                  <span className="ai-new-badge">NEW</span>
+                </Link>
                 {user.role === 'Admin' && (
                   <Link to="/admin" className="nav-link">Admin Panel</Link>
                 )}

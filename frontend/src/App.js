@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ModernDashboard from './pages/ModernDashboard';
+import AIAssistantPage from './pages/AIAssistantPage';
 import Profile from './pages/Profile';
 import SchemeExplorer from './pages/SchemeExplorer';
 import LifeEventPage from './pages/LifeEventPage';
@@ -18,7 +19,8 @@ import AdminPanel from './pages/AdminPanel';
 function AppContent() {
   const location = useLocation();
 
-  // Don't show old navbar on modern-dashboard (which has its own navbar)
+  // Hide old navbar only on modern-dashboard (which has its own navbar)
+  // AI Assistant page keeps the existing navbar
   const showNavbar = location.pathname !== '/modern-dashboard';
 
   return (
@@ -43,6 +45,14 @@ function AppContent() {
                   <ModernDashboard />
                 </PrivateRoute>
               } 
+            />
+            <Route
+              path="/assistant"
+              element={
+                <PrivateRoute>
+                  <AIAssistantPage />
+                </PrivateRoute>
+              }
             />
             <Route 
               path="/profile" 
