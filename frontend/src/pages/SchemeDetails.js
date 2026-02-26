@@ -13,6 +13,7 @@ const SchemeDetails = () => {
   const [error, setError] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -48,7 +49,7 @@ const SchemeDetails = () => {
     navigate('/schemes');
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
@@ -61,18 +62,43 @@ const SchemeDetails = () => {
     };
 
     setChatMessages(prev => [...prev, userMessage]);
+    const currentInput = chatInput;
     setChatInput('');
+    setIsLoadingResponse(true);
 
-    // Mock bot response (delayed for realism)
-    setTimeout(() => {
+    try {
+      // Send request to backend API endpoint (which proxies to webhook)
+      const response = await api.post(`/schemes/${id}/chat`, {
+        chat: currentInput,
+        scheme: scheme?.name || '',
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to get response');
+      }
+
+      // Add bot response from webhook
       const botMessage = {
         id: Date.now() + 1,
-        text: `${t('thanksForAsking')} ${scheme?.name}. ${t('helpfulResource')} ${t('moreInfo')}`,
+        text: response.data.output || 'Unable to process your question. Please try again.',
         sender: 'bot',
         timestamp: new Date(),
       };
       setChatMessages(prev => [...prev, botMessage]);
-    }, 500);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Add error message
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: 'Sorry, I encountered an error processing your question. Please try again later.',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoadingResponse(false);
+    }
   };
 
   if (loading) {
@@ -216,7 +242,10 @@ const SchemeDetails = () => {
             <div className="chat-messages">
               {chatMessages.length === 0 && (
                 <div className="chat-empty">
-                  <p>👋 {t('chatEmpty')} <strong>{scheme.name}</strong></p>
+                  <div className="empty-state">
+                    <div className="empty-icon">💬</div>
+                    <p>👋 {t('chatEmpty')} <strong>{scheme.name}</strong></p>
+                  </div>
                 </div>
               )}
 
@@ -231,6 +260,16 @@ const SchemeDetails = () => {
                 </div>
               ))}
 
+              {isLoadingResponse && (
+                <div className="chat-message chat-message-bot">
+                  <div className="message-bubble loading-bubble">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -241,13 +280,18 @@ const SchemeDetails = () => {
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 className="chat-input"
+                disabled={isLoadingResponse}
               />
               <button
                 type="submit"
-                disabled={!chatInput.trim()}
+                disabled={!chatInput.trim() || isLoadingResponse}
                 className="chat-send-btn"
               >
-                {t('send')}
+                {isLoadingResponse ? (
+                  <span className="btn-loading">...</span>
+                ) : (
+                  t('send')
+                )}
               </button>
             </form>
           </div>

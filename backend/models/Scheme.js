@@ -7,18 +7,19 @@ const schemeSchema = new mongoose.Schema({
     trim: true,
     unique: true
   },
+  schemeId: {
+    type: String,
+    required: [true, 'Please provide scheme ID'],
+    unique: true,
+    trim: true
+  },
   description: {
     type: String,
     required: [true, 'Please provide scheme description']
   },
   department: {
     type: String,
-    required: [true, 'Please provide department name'],
-    enum: [
-      'Social Welfare', 'Education', 'Health', 'Agriculture', 
-      'Women & Child Development', 'Labour', 'Revenue', 
-      'Rural Development', 'Urban Development', 'Finance'
-    ]
+    required: [true, 'Please provide department name']
   },
   eligibility: {
     ageMin: {
@@ -34,31 +35,20 @@ const schemeSchema = new mongoose.Schema({
       default: null
     },
     casteCategories: [{
-      type: String,
-      enum: ['General', 'OBC', 'SC', 'ST', 'EWS', 'All']
+      type: String
     }],
     gender: [{
-      type: String,
-      enum: ['Male', 'Female', 'Other', 'All']
+      type: String
     }],
     occupations: [{
-      type: String,
-      enum: ['Student', 'Farmer', 'Business', 'Job', 'Unemployed', 'Self-Employed', 'Retired', 'Other', 'All']
+      type: String
     }]
   },
   requiredDocuments: [{
-    type: String,
-    enum: [
-      'Aadhaar Card', 'Income Certificate', 'Caste Certificate', 
-      'Domicile Certificate', 'Age Proof', 'Educational Certificate', 
-      'Bank Passbook', 'Ration Card', 'Voter ID', 'Pan Card',
-      'Samagra ID', 'Land Documents', 'Disability Certificate',
-      'BPL Card', 'Death Certificate', 'Birth Certificate'
-    ]
+    type: String
   }],
   lifeEvents: [{
-    type: String,
-    enum: ['Student', 'Farmer', 'Senior Citizen', 'Medical Emergency', 'Marriage', 'New Child', 'General']
+    type: String
   }],
   benefits: {
     type: String,

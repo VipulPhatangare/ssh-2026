@@ -34,7 +34,6 @@ const Navbar = () => {
               <>
                 <Link to="/dashboard" className="nav-link">{t('dashboard')}</Link>
                 <Link to="/schemes" className="nav-link">{t('schemes')}</Link>
-                <Link to="/life-events" className="nav-link">{t('lifeEvents')}</Link>
                 <Link to="/applications" className="nav-link">{t('applications')}</Link>
                 <Link to="/grievances" className="nav-link">{t('grievances')}</Link>
                 <Link to="/assistant" className="nav-link ai-nav-link">
