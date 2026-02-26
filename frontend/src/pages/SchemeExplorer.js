@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import './SchemeExplorer.css';
 
 const SchemeExplorer = () => {
+  const { t } = useTranslation();
   const [schemes, setSchemes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -75,32 +77,32 @@ const SchemeExplorer = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading schemes...</div>;
+    return <div className="loading">{t('loading')}</div>;
   }
 
   return (
     <div className="scheme-explorer">
       <div className="container">
-        <h1>Government Schemes</h1>
+        <h1>{t('governmentSchemes')}</h1>
 
         <div className="filter-buttons">
           <button 
             className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilter('all')}
           >
-            All Schemes
+            {t('allSchemes')}
           </button>
           <button 
             className={`btn ${filter === 'eligible' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilter('eligible')}
           >
-            Eligible for Me
+            {t('eligibleForMe')}
           </button>
           <button 
             className={`btn ${filter === 'unclaimed' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilter('unclaimed')}
           >
-            Unclaimed Benefits
+            {t('unclaimedBenefits')}
           </button>
         </div>
 
@@ -108,7 +110,7 @@ const SchemeExplorer = () => {
           <div className="search-box">
             <input
               type="text"
-              placeholder="Search by scheme name or description..."
+              placeholder={t('search')}
               value={searchQuery}
               onChange={handleSearchChange}
               className="search-input"
@@ -120,7 +122,7 @@ const SchemeExplorer = () => {
             onChange={handleDepartmentChange}
             className="department-select"
           >
-            <option value="all">All Departments</option>
+            <option value="all">{t('allDepartments')}</option>
             {departments.map(dept => (
               <option key={dept} value={dept}>
                 {dept}
@@ -133,8 +135,8 @@ const SchemeExplorer = () => {
           {filteredSchemes.length === 0 ? (
             <p className="no-schemes">
               {schemes.length === 0
-                ? 'No schemes found.'
-                : 'No schemes match your search or filter criteria.'}
+                ? t('noSchemes')
+                : t('noSchemesFound')}
             </p>
           ) : (
             filteredSchemes.map((scheme) => (
@@ -149,7 +151,7 @@ const SchemeExplorer = () => {
                     onClick={() => handleViewMore(scheme._id)}
                     className="btn btn-primary view-more-btn"
                   >
-                    View More
+                    {t('viewMore')}
                   </button>
                 </div>
               </div>

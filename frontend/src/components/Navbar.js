@@ -1,15 +1,23 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  // Handle language change
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('language', lng);
   };
 
   return (
@@ -21,32 +29,50 @@ const Navbar = () => {
           </Link>
           
           <div className="navbar-links">
-            {user && <Link to="/" className="nav-link home-link">Home</Link>}
+            {user && <Link to="/" className="nav-link home-link">{t('home')}</Link>}
             {user ? (
               <>
-                <Link to="/dashboard" className="nav-link">Dashboard</Link>
-                <Link to="/schemes" className="nav-link">Schemes</Link>
-                <Link to="/life-events" className="nav-link">Life Events</Link>
-                <Link to="/applications" className="nav-link">Applications</Link>
-                <Link to="/grievances" className="nav-link">Grievances</Link>
+                <Link to="/dashboard" className="nav-link">{t('dashboard')}</Link>
+                <Link to="/schemes" className="nav-link">{t('schemes')}</Link>
+                <Link to="/life-events" className="nav-link">{t('lifeEvents')}</Link>
+                <Link to="/applications" className="nav-link">{t('applications')}</Link>
+                <Link to="/grievances" className="nav-link">{t('grievances')}</Link>
                 <Link to="/assistant" className="nav-link ai-nav-link">
                   🤖 AI Assistant
                   <span className="ai-new-badge">NEW</span>
                 </Link>
                 {user.role === 'Admin' && (
-                  <Link to="/admin" className="nav-link">Admin Panel</Link>
+                  <Link to="/admin" className="nav-link">{t('admin')}</Link>
                 )}
-                <Link to="/profile" className="nav-link">Profile</Link>
+                <Link to="/profile" className="nav-link">{t('profile')}</Link>
                 <button onClick={handleLogout} className="btn btn-secondary">
-                  Logout
+                  {t('logout')}
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="btn btn-primary">Login</Link>
-                <Link to="/register" className="btn btn-secondary">Register</Link>
+                <Link to="/login" className="btn btn-primary">{t('login')}</Link>
+                <Link to="/register" className="btn btn-secondary">{t('register')}</Link>
               </>
             )}
+
+            {/* Language Switcher */}
+            <div className="language-switcher">
+              <button
+                onClick={() => changeLanguage('en')}
+                className={`lang-btn ${i18n.language === 'en' ? 'active' : ''}`}
+                title="English"
+              >
+                EN
+              </button>
+              <button
+                onClick={() => changeLanguage('hi')}
+                className={`lang-btn ${i18n.language === 'hi' ? 'active' : ''}`}
+                title="हिंदी"
+              >
+                HI
+              </button>
+            </div>
           </div>
         </div>
       </div>

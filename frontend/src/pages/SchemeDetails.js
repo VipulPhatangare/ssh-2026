@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import './SchemeDetails.css';
 
 const SchemeDetails = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [scheme, setScheme] = useState(null);
@@ -30,7 +32,7 @@ const SchemeDetails = () => {
       setScheme(response.data.data);
     } catch (err) {
       console.error('Error fetching scheme details:', err);
-      setError('Failed to load scheme details. Please try again.');
+      setError(t('failedLoadScheme'));
     } finally {
       setLoading(false);
     }
@@ -65,7 +67,7 @@ const SchemeDetails = () => {
     setTimeout(() => {
       const botMessage = {
         id: Date.now() + 1,
-        text: `Thanks for asking about ${scheme?.name}. This is a helpful resource for eligible citizens. You can find more information in the scheme details above, or feel free to ask me any other questions!`,
+        text: `${t('thanksForAsking')} ${scheme?.name}. ${t('helpfulResource')} ${t('moreInfo')}`,
         sender: 'bot',
         timestamp: new Date(),
       };
@@ -77,7 +79,7 @@ const SchemeDetails = () => {
     return (
       <div className="scheme-details-page">
         <div className="container">
-          <div className="loading">Loading scheme details...</div>
+          <div className="loading">{t('loading')}</div>
         </div>
       </div>
     );
@@ -88,9 +90,9 @@ const SchemeDetails = () => {
       <div className="scheme-details-page">
         <div className="container">
           <div className="error-message">
-            <p>{error || 'Scheme not found.'}</p>
+            <p>{error || t('schemeNotFound')}</p>
             <button onClick={handleBack} className="btn btn-primary">
-              Back to Schemes
+              {t('backToSchemes')}
             </button>
           </div>
         </div>
@@ -102,7 +104,7 @@ const SchemeDetails = () => {
     <div className="scheme-details-page">
       <div className="container">
         <button onClick={handleBack} className="btn-back">
-          ← Back to Schemes
+          ← {t('backToSchemes')}
         </button>
 
         <div className="scheme-details-wrapper">
@@ -116,20 +118,20 @@ const SchemeDetails = () => {
             </div>
 
             <div className="scheme-section">
-              <h2 className="section-title">Description</h2>
+              <h2 className="section-title">{t('description_label')}</h2>
               <p className="section-content">{scheme.description}</p>
             </div>
 
             {scheme.benefits && (
               <div className="scheme-section">
-                <h2 className="section-title">Benefits</h2>
+                <h2 className="section-title">{t('benefits')}</h2>
                 <p className="section-content">{scheme.benefits}</p>
               </div>
             )}
 
             {scheme.requiredDocuments && scheme.requiredDocuments.length > 0 && (
               <div className="scheme-section">
-                <h2 className="section-title">Required Documents</h2>
+                <h2 className="section-title">{t('requiredDocuments')}</h2>
                 <ul className="documents-list">
                   {scheme.requiredDocuments.map((doc, index) => (
                     <li key={index} className="document-item">
@@ -142,31 +144,31 @@ const SchemeDetails = () => {
 
             {scheme.eligibility && (
               <div className="scheme-section">
-                <h2 className="section-title">Eligibility Criteria</h2>
+                <h2 className="section-title">{t('eligibilityCriteria')}</h2>
                 <div className="eligibility-container">
                   {scheme.eligibility?.ageMin && (
                     <p className="eligibility-item">
-                      <strong>Minimum Age:</strong> {scheme.eligibility.ageMin} years
+                      <strong>{t('minimumAge')}:</strong> {scheme.eligibility.ageMin} {t('years')}
                     </p>
                   )}
                   {scheme.eligibility?.ageMax && (
                     <p className="eligibility-item">
-                      <strong>Maximum Age:</strong> {scheme.eligibility.ageMax} years
+                      <strong>{t('maximumAge')}:</strong> {scheme.eligibility.ageMax} {t('years')}
                     </p>
                   )}
                   {scheme.eligibility?.gender && (
                     <p className="eligibility-item">
-                      <strong>Gender:</strong> {scheme.eligibility.gender}
+                      <strong>{t('gender')}:</strong> {scheme.eligibility.gender}
                     </p>
                   )}
                   {scheme.eligibility?.incomeMax && (
                     <p className="eligibility-item">
-                      <strong>Maximum Income:</strong> ₹{scheme.eligibility.incomeMax}
+                      <strong>{t('maximumIncome')}:</strong> ₹{scheme.eligibility.incomeMax}
                     </p>
                   )}
                   {scheme.eligibility?.casteCategories && scheme.eligibility.casteCategories.length > 0 && (
                     <div className="eligibility-item">
-                      <strong>Caste Categories:</strong>
+                      <strong>{t('casteCategories')}:</strong>
                       <ul className="eligibility-list">
                         {scheme.eligibility.casteCategories.map((caste, index) => (
                           <li key={index}>{caste}</li>
@@ -176,7 +178,7 @@ const SchemeDetails = () => {
                   )}
                   {scheme.eligibility?.occupations && scheme.eligibility.occupations.length > 0 && (
                     <div className="eligibility-item">
-                      <strong>Occupations:</strong>
+                      <strong>{t('occupations')}:</strong>
                       <ul className="eligibility-list">
                         {scheme.eligibility.occupations.map((occupation, index) => (
                           <li key={index}>{occupation}</li>
@@ -193,13 +195,13 @@ const SchemeDetails = () => {
                 onClick={handleApply}
                 className="btn btn-primary btn-lg"
               >
-                Apply Now
+                {t('applyNow')}
               </button>
               <button
                 onClick={handleBack}
                 className="btn btn-secondary btn-lg"
               >
-                Back to Schemes
+                {t('backToSchemes')}
               </button>
             </div>
           </div>
@@ -207,14 +209,14 @@ const SchemeDetails = () => {
           {/* RIGHT SECTION - CHAT INTERFACE (30%) */}
           <div className="chat-panel">
             <div className="chat-header">
-              <h3 className="chat-title">Ask about this scheme</h3>
-              <p className="chat-subtitle">Get instant answers</p>
+              <h3 className="chat-title">{t('askAboutScheme')}</h3>
+              <p className="chat-subtitle">{t('getInstantAnswers')}</p>
             </div>
 
             <div className="chat-messages">
               {chatMessages.length === 0 && (
                 <div className="chat-empty">
-                  <p>👋 Hi! Ask me any questions about <strong>{scheme.name}</strong></p>
+                  <p>👋 {t('chatEmpty')} <strong>{scheme.name}</strong></p>
                 </div>
               )}
 
@@ -235,7 +237,7 @@ const SchemeDetails = () => {
             <form onSubmit={handleSendMessage} className="chat-input-form">
               <input
                 type="text"
-                placeholder="Ask your question..."
+                placeholder={t('askYourQuestion')}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 className="chat-input"
@@ -245,7 +247,7 @@ const SchemeDetails = () => {
                 disabled={!chatInput.trim()}
                 className="chat-send-btn"
               >
-                Send
+                {t('send')}
               </button>
             </form>
           </div>
