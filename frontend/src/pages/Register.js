@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import './Auth.css';
 
@@ -24,6 +25,7 @@ const Register = () => {
     rationCardNumber: '',
     governmentEmployeeId: ''
   });
+  const { t } = useTranslation();
   const [showGovDetails, setShowGovDetails] = useState(false);
   const [error, setError] = useState('');
   const { register } = useContext(AuthContext);
@@ -66,13 +68,13 @@ const Register = () => {
   return (
     <div className="auth-container">
       <div className="auth-card register-card">
-        <h2>Create Your Account</h2>
+        <h2>{t('registerTitle')}</h2>
         {error && <div className="alert alert-error">{error}</div>}
         
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
-              <label>Full Name *</label>
+              <label>{t('fullNameLabel')}</label>
               <input
                 type="text"
                 name="fullName"
@@ -83,7 +85,7 @@ const Register = () => {
             </div>
 
             <div className="form-group">
-              <label>Email *</label>
+              <label>{t('emailLabel')} *</label>
               <input
                 type="email"
                 name="email"
@@ -96,7 +98,7 @@ const Register = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Password *</label>
+              <label>{t('passwordLabel')} *</label>
               <input
                 type="password"
                 name="password"
@@ -107,7 +109,7 @@ const Register = () => {
             </div>
 
             <div className="form-group">
-              <label>Age *</label>
+              <label>{t('ageLabel')}</label>
               <input
                 type="number"
                 name="age"
@@ -120,29 +122,29 @@ const Register = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Gender *</label>
+              <label>{t('genderLabel')}</label>
               <select
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
                 required
               >
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
+                <option value="">{t('selectGender')}</option>
+                <option value="Male">{t('male')}</option>
+                <option value="Female">{t('female')}</option>
+                <option value="Other">{t('other')}</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label>Caste Category *</label>
+              <label>{t('casteCategoryLabel')}</label>
               <select
                 name="casteCategory"
                 value={formData.casteCategory}
                 onChange={handleChange}
                 required
               >
-                <option value="">Select Category</option>
+                <option value="">{t('selectCategory')}</option>
                 <option value="General">General</option>
                 <option value="OBC">OBC</option>
                 <option value="SC">SC</option>
@@ -154,7 +156,7 @@ const Register = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Annual Income (Rs.) *</label>
+              <label>{t('annualIncomeRs')}</label>
               <input
                 type="number"
                 name="annualIncome"
@@ -165,36 +167,36 @@ const Register = () => {
             </div>
 
             <div className="form-group">
-              <label>Occupation *</label>
+              <label>{t('occupationLabel')}</label>
               <select
                 name="occupation"
                 value={formData.occupation}
                 onChange={handleChange}
                 required
               >
-                <option value="">Select Occupation</option>
-                <option value="Student">Student</option>
-                <option value="Farmer">Farmer</option>
-                <option value="Business">Business</option>
-                <option value="Job">Job</option>
-                <option value="Unemployed">Unemployed</option>
-                <option value="Self-Employed">Self-Employed</option>
-                <option value="Retired">Retired</option>
-                <option value="Other">Other</option>
+                <option value="">{t('selectOccupation')}</option>
+                <option value="Student">{t('occupationStudent')}</option>
+                <option value="Farmer">{t('occupationFarmer')}</option>
+                <option value="Business">{t('occupationBusiness')}</option>
+                <option value="Job">{t('occupationJob')}</option>
+                <option value="Unemployed">{t('occupationUnemployed')}</option>
+                <option value="Self-Employed">{t('occupationSelfEmployed')}</option>
+                <option value="Retired">{t('occupationRetired')}</option>
+                <option value="Other">{t('other')}</option>
               </select>
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>District *</label>
+              <label>{t('districtLabel')}</label>
               <select
                 name="district"
                 value={formData.district}
                 onChange={handleChange}
                 required
               >
-                <option value="">Select District</option>
+                <option value="">{t('selectDistrict')}</option>
                 {districts.map(district => (
                   <option key={district} value={district}>{district}</option>
                 ))}
@@ -202,13 +204,13 @@ const Register = () => {
             </div>
 
             <div className="form-group">
-              <label>Samagra ID (Optional)</label>
+              <label>{t('samagraIdLabel')}</label>
               <input
                 type="text"
                 name="samagraId"
                 value={formData.samagraId}
                 onChange={handleChange}
-                placeholder="9-digit Samagra ID"
+                placeholder={t('samagraIdPlaceholder')}
               />
             </div>
           </div>
@@ -221,31 +223,31 @@ const Register = () => {
               onClick={() => setShowGovDetails(!showGovDetails)}
             >
               <span className="toggle-icon">{showGovDetails ? '▼' : '▶'}</span>
-              Additional Government Details (Optional)
+              {t('govDetails')}
             </button>
 
             {showGovDetails && (
               <div className="gov-details-container">
                 <p className="helper-text">
-                  Providing these details helps in eligibility matching but is not mandatory.
+                  {t('govDetailsHelper')}
                 </p>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Aadhaar Number (Optional)</label>
+                    <label>{t('aadhaarOptional')}</label>
                     <input
                       type="text"
                       name="aadhaarNumber"
                       value={formData.aadhaarNumber}
                       onChange={handleChange}
-                      placeholder="12-digit Aadhaar number"
+                      placeholder={t('aadhaarPlaceholder')}
                       pattern="[0-9]{12}"
                     />
-                    <small>12 digits only</small>
+                    <small>{t('aadhaarHelperShort')}</small>
                   </div>
 
                   <div className="form-group">
-                    <label>PAN Number (Optional)</label>
+                    <label>{t('panOptional')}</label>
                     <input
                       type="text"
                       name="panNumber"
@@ -260,61 +262,61 @@ const Register = () => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Passport Number (Optional)</label>
+                    <label>{t('passportOptional')}</label>
                     <input
                       type="text"
                       name="passportNumber"
                       value={formData.passportNumber}
                       onChange={handleChange}
-                      placeholder="Passport number"
+                      placeholder={t('passportPlaceholder')}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label>Driving License Number (Optional)</label>
+                    <label>{t('drivingLicenseOptional')}</label>
                     <input
                       type="text"
                       name="drivingLicenseNumber"
                       value={formData.drivingLicenseNumber}
                       onChange={handleChange}
-                      placeholder="Driving license number"
+                      placeholder={t('drivingLicensePlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Voter ID Number (Optional)</label>
+                    <label>{t('voterIdOptional')}</label>
                     <input
                       type="text"
                       name="voterIdNumber"
                       value={formData.voterIdNumber}
                       onChange={handleChange}
-                      placeholder="Voter ID number"
+                      placeholder={t('voterIdPlaceholder')}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label>Ration Card Number (Optional)</label>
+                    <label>{t('rationCardOptional')}</label>
                     <input
                       type="text"
                       name="rationCardNumber"
                       value={formData.rationCardNumber}
                       onChange={handleChange}
-                      placeholder="Ration card number"
+                      placeholder={t('rationCardPlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Government Employee ID (Optional)</label>
+                    <label>{t('govEmployeeIdOptional')}</label>
                     <input
                       type="text"
                       name="governmentEmployeeId"
                       value={formData.governmentEmployeeId}
                       onChange={handleChange}
-                      placeholder="Government employee ID"
+                      placeholder={t('govEmployeeIdPlaceholder')}
                     />
                   </div>
                 </div>
@@ -323,12 +325,12 @@ const Register = () => {
           </div>
 
           <button type="submit" className="btn btn-primary btn-block">
-            Register
+            {t('register')}
           </button>
         </form>
 
         <p className="auth-link">
-          Already have an account? <a href="/login">Login here</a>
+          {t('alreadyAccount')} <a href="/login">{t('loginHere')}</a>
         </p>
       </div>
     </div>

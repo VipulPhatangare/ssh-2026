@@ -34,17 +34,6 @@ const ApplicationTracker = () => {
     }
   };
 
-  // Translate status values from English DB values to current language
-  const translateStatus = (status) => {
-    const map = {
-      'Approved': t('statusApproved'),
-      'Rejected': t('statusRejected'),
-      'Pending': t('statusPending'),
-      'Under Review': t('statusUnderReview')
-    };
-    return map[status] || status;
-  };
-
   if (loading) {
     return <div className="loading">{t('loadingApplications')}</div>;
   }
@@ -68,12 +57,12 @@ const ApplicationTracker = () => {
                   onClick={() => setSelectedApp(app)}
                 >
                   <h3>{app.schemeId?.name}</h3>
-                  <p className="app-number">{t('applicationNo')}: {app.applicationNumber}</p>
+                  <p className="app-number">{t('applicationNo', { num: app.applicationNumber })}</p>
                   <span className={`badge badge-${getStatusColor(app.status)}`}>
-                    {translateStatus(app.status)}
+                    {app.status}
                   </span>
                   <p className="app-date">
-                    {t('submitted')}: {new Date(app.submissionDate).toLocaleDateString()}
+                    {t('submittedOn', { date: new Date(app.submissionDate).toLocaleDateString() })}
                   </p>
                 </div>
               ))}
@@ -85,18 +74,18 @@ const ApplicationTracker = () => {
                 
                 <div className="detail-section">
                   <h3>{t('schemeInformation')}</h3>
-                  <p><strong>{t('schemeName')}:</strong> {selectedApp.schemeId?.name}</p>
-                  <p><strong>{t('department')}:</strong> {selectedApp.schemeId?.department}</p>
-                  <p><strong>{t('applicationNumber')}:</strong> {selectedApp.applicationNumber}</p>
+                  <p><strong>{t('schemeNameLabel')}</strong> {selectedApp.schemeId?.name}</p>
+                  <p><strong>{t('departmentLabel')}</strong> {selectedApp.schemeId?.department}</p>
+                  <p><strong>{t('applicationNumberLabel')}</strong> {selectedApp.applicationNumber}</p>
                 </div>
 
                 <div className="detail-section">
-                  <h3>{t('status')}</h3>
+                  <h3>{t('statusLabel')}</h3>
                   <span className={`badge badge-${getStatusColor(selectedApp.status)} badge-lg`}>
-                    {translateStatus(selectedApp.status)}
+                    {selectedApp.status}
                   </span>
                   {selectedApp.remarks && (
-                    <p className="remarks"><strong>{t('remarks')}:</strong> {selectedApp.remarks}</p>
+                    <p className="remarks"><strong>{t('remarksLabel')}</strong> {selectedApp.remarks}</p>
                   )}
                 </div>
 

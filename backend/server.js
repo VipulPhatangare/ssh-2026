@@ -1,6 +1,9 @@
-const express = require('express');
+// Load env vars FIRST — before any other require reads process.env constants
+const path   = require('path');
 const dotenv = require('dotenv');
-const path = require('path');
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -9,9 +12,8 @@ const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const { initGridFS } = require('./config/gridfs');
-
-// Load env vars from root directory
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+const translationMiddleware = require('./middleware/translationMiddleware');
+const translationCache = require('./services/translationCache');
 
 // Connect to database
 connectDB();
@@ -62,6 +64,17 @@ app.use(express.urlencoded({ extended: true }));
 // Cookie parser
 app.use(cookieParser());
 
+// ── EJS view engine (for server-side rendered pages) ────────────────────────
+// Remove or skip this block if the project is API-only (React SPA).
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// ── Dynamic translation middleware ──────────────────────────────────────────
+// Reads ?lng=<code> from every request and patches res.json() / res.render()
+// to translate responses into the requested language at runtime.
+// English (?lng=en or no lng param) is a zero-cost no-op.
+app.use(translationMiddleware);
+
 // Middleware to make GridFS bucket available to routes
 app.use((req, res, next) => {
   // GridFS bucket will be available after MongoDB connection
@@ -80,10 +93,43 @@ app.use('/api/ai', require('./routes/uploadRoutes'));
 
 // Health check route
 app.get('/api/health', (req, res) => {
+  res.noTranslate = true;   // system data — never translate
   res.status(200).json({
     success: true,
     message: 'Server is running'
   });
+});
+
+// Translation cache stats (useful for APM / admin monitoring)
+app.get('/api/translation/cache-stats', (req, res) => {
+  res.noTranslate = true;
+  res.json({ success: true, cache: translationCache.stats() });
+});
+
+// Flush translation cache (admin only — protect this in production)
+app.post('/api/translation/cache-flush', (req, res) => {
+  translationCache.flush();
+  res.json({ success: true, message: 'Translation cache flushed.' });
+});
+
+// Translate arbitrary JSON — used by the frontend to translate data that comes
+// from third-party webhooks (e.g. n8n eligible-for-me) and therefore never
+// passes through the backend translation middleware.
+app.post('/api/translation/translate', async (req, res) => {
+  res.noTranslate = true;
+  const { data, lng } = req.body;
+  if (!data || !lng || lng === 'en') {
+    return res.json({ success: true, data: data ?? null });
+  }
+  try {
+    const { translateJson } = require('./utils/jsonTranslator');
+    const plain      = JSON.parse(JSON.stringify(data)); // normalise
+    const translated = await translateJson(plain, lng);
+    res.json({ success: true, data: translated });
+  } catch (err) {
+    console.error('[/api/translation/translate]', err.message);
+    res.json({ success: true, data }); // graceful fallback
+  }
 });
 
 // Error handler middleware

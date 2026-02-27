@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import './AIAssistantPage.css';
@@ -15,7 +16,7 @@ const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(
 const generateChatId = () => `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // ─── Format session timestamp for sidebar ────────────────────────────────────
-const formatSessionTime = (iso) => {
+const formatSessionTime = (iso, t) => {
   if (!iso) return '';
   const d = new Date(iso);
   const now = new Date();
@@ -23,10 +24,10 @@ const formatSessionTime = (iso) => {
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
-  if (diffMins < 1) return 'Just now';
+  if (diffMins < 1) return t ? t('aiJustNow') : 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  if (diffDays === 1) return 'Yesterday';
+  if (diffDays === 1) return t ? t('aiYesterday') : 'Yesterday';
   if (diffDays < 7) return d.toLocaleDateString('en-IN', { weekday: 'short' });
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
@@ -111,18 +112,20 @@ const sendToWebhook = async (payload) => {
   }
 };
 // ─── Comparison result table component ──────────────────────────────────
-const PARAM_LABELS = {
-  objective:                'Objective',
-  target_beneficiaries:     'Target Beneficiaries',
-  eligibility_criteria:     'Eligibility Criteria',
-  financial_benefits:       'Financial Benefits',
-  type_of_assistance:       'Type of Assistance',
-  application_mode:         'Application Mode',
-  implementing_department:  'Implementing Dept.',
-};
-
 const ComparisonTable = ({ data }) => {
-  if (!data) return <p>📊 No comparison data received.</p>;
+  const { t } = useTranslation();
+
+  const PARAM_LABELS = {
+    objective:                t('aiCmpObjective'),
+    target_beneficiaries:     t('aiCmpTargetBeneficiaries'),
+    eligibility_criteria:     t('aiCmpEligibility'),
+    financial_benefits:       t('aiCmpFinancialBenefits'),
+    type_of_assistance:       t('aiCmpTypeAssistance'),
+    application_mode:         t('aiCmpApplicationMode'),
+    implementing_department:  t('aiCmpImplementingDept'),
+  };
+
+  if (!data) return <p>{t('aiCmpNoData')}</p>;
 
   const schemes = Array.isArray(data.schemes) ? data.schemes : [];
   const paramKeys = Object.keys(PARAM_LABELS);
@@ -130,14 +133,14 @@ const ComparisonTable = ({ data }) => {
 
   return (
     <div className="cmp-wrapper">
-      <p className="cmp-title">⚖️ Scheme Comparison ({schemes.length} schemes)</p>
+      <p className="cmp-title">{t('aiCmpTitle')} ({schemes.length} schemes)</p>
 
       {/* Scrollable table */}
       <div className="cmp-table-scroll">
         <table className="cmp-table">
           <thead>
             <tr>
-              <th className="cmp-param-col">Parameter</th>
+              <th className="cmp-param-col">{t('aiCmpParameter')}</th>
               {schemes.map((s, i) => (
                 <th key={i} className="cmp-scheme-col">{s.scheme_name}</th>
               ))}
@@ -154,11 +157,11 @@ const ComparisonTable = ({ data }) => {
             ))}
             {/* Official link row */}
             <tr>
-              <td className="cmp-param-cell">Official Link</td>
+              <td className="cmp-param-cell">{t('aiCmpOfficialLink')}</td>
               {schemes.map((s, i) => (
                 <td key={i} className="cmp-value-cell">
                   {s.official_link
-                    ? <a href={s.official_link} target="_blank" rel="noopener noreferrer" className="cmp-link">Apply ↗</a>
+                    ? <a href={s.official_link} target="_blank" rel="noopener noreferrer" className="cmp-link">{t('aiCmpApply')}</a>
                     : '—'}
                 </td>
               ))}
@@ -172,13 +175,13 @@ const ComparisonTable = ({ data }) => {
         <div className="cmp-summary">
           {summary.key_differences && (
             <div className="cmp-summary-block">
-              <p className="cmp-summary-label">🔍 Key Differences</p>
+              <p className="cmp-summary-label">{t('aiCmpKeyDiff')}</p>
               <p className="cmp-summary-text">{summary.key_differences}</p>
             </div>
           )}
           {summary.who_should_apply_for_which && (
             <div className="cmp-summary-block">
-              <p className="cmp-summary-label">🎯 Who Should Apply</p>
+              <p className="cmp-summary-label">{t('aiCmpWhoApply')}</p>
               <p className="cmp-summary-text">{summary.who_should_apply_for_which}</p>
             </div>
           )}
@@ -190,6 +193,7 @@ const ComparisonTable = ({ data }) => {
 // ─── Component ────────────────────────────────────────────────────────────────
 const AIAssistantPage = () => {
   const { user } = useContext(AuthContext);
+  const { t, i18n } = useTranslation();
 
   const [messages, setMessages]                 = useState([]);
   const [input, setInput]                       = useState('');
@@ -197,7 +201,7 @@ const AIAssistantPage = () => {
   const [isRecording, setIsRecording]           = useState(false);
   const [sidebarOpen, setSidebarOpen]           = useState(false);
   const [activeChat, setActiveChat]             = useState(null);
-  const [isHindi, setIsHindi]                   = useState(false);
+  const isHindi = i18n.language === 'hi';
   const [dragOver, setDragOver]                 = useState(false);
   const [searchQuery, setSearchQuery]           = useState('');
   const [sessionId, setSessionId]               = useState(() => generateSessionId());
@@ -229,7 +233,7 @@ const AIAssistantPage = () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     const title =
-      messages.find(m => m.role === 'user')?.content?.slice(0, 60).trim() || 'New Chat';
+      messages.find(m => m.role === 'user')?.content?.slice(0, 60).trim() || t('aiNewChatFallback');
     const timer = setTimeout(() => {
       axios
         .put(
@@ -254,6 +258,20 @@ const AIAssistantPage = () => {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
+
+  // ─── Translate text via backend if lang != 'en' ───────────────────────────
+  const translateResponse = async (text) => {
+    if (!text || i18n.language === 'en') return text;
+    try {
+      const res = await axios.post('http://localhost:5000/api/translation/translate', {
+        data: { text },
+        lng: i18n.language,
+      });
+      return res.data?.data?.text || text;
+    } catch {
+      return text;
+    }
+  };
 
   // Auto-resize textarea
   const handleInputChange = (e) => {
@@ -318,10 +336,11 @@ const AIAssistantPage = () => {
         }
 
         if (aiResponse) {
+          const translated = await translateResponse(aiResponse);
           const botMsg = {
             id: Date.now() + 1,
             role: 'bot',
-            content: aiResponse,
+            content: translated,
             schemes: schemes || [],
             time: getTime(),
           };
@@ -334,8 +353,8 @@ const AIAssistantPage = () => {
           id: Date.now() + 1,
           role: 'bot',
           content: uploadResult.webhookSuccess
-            ? '📎 File uploaded successfully, but I did not receive a readable AI response. Please try again.'
-            : '📎 File uploaded successfully, but the AI service did not respond. Please try again in a moment.',
+            ? t('aiUploadSuccessNoResponse')
+            : t('aiUploadNoAiResponse'),
           schemes: [],
           time: getTime(),
         };
@@ -347,7 +366,7 @@ const AIAssistantPage = () => {
       const botMsg = {
         id: Date.now() + 1,
         role: 'bot',
-        content: '❌ Upload failed. Please check your internet connection and try again.',
+        content: t('aiUploadFailed'),
         schemes: [],
         time: getTime(),
       };
@@ -403,10 +422,11 @@ const AIAssistantPage = () => {
       console.log('📋 Extracted Schemes:', schemes);
 
       if (aiResponse) {
+        const translated = await translateResponse(aiResponse);
         const botMsg = {
           id: Date.now() + 1,
           role: 'bot',
-          content: aiResponse,
+          content: translated,
           schemes: schemes || [],
           time: getTime(),
         };
@@ -455,13 +475,13 @@ const AIAssistantPage = () => {
     const isImage = file.type.startsWith('image/');
     const isPDF = file.type === 'application/pdf';
     if (!isImage && !isPDF) {
-      alert('Please upload only images (JPEG, PNG) or PDF files');
+      alert(t('aiOnlyImages'));
       return;
     }
     
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      alert(t('aiFileTooLarge'));
       return;
     }
 
@@ -504,7 +524,7 @@ const AIAssistantPage = () => {
   // ─── Voice toggle (Web Speech API) ───────────────────────────────────────────
   const toggleRecording = () => {
     if (!('webkitSpeechRecognition' in window)) {
-      alert('Speech recognition not supported in this browser');
+      alert(t('aiSpeechNotSupported'));
       return;
     }
 
@@ -656,7 +676,7 @@ const AIAssistantPage = () => {
       setMessages(prev => [...prev, {
         id: Date.now(),
         role: 'bot',
-        content: '❌ Could not fetch comparison. Please try again.',
+        content: t('aiCompareFailed'),
         schemes: [],
         time: getTime(),
       }]);
@@ -676,18 +696,14 @@ const AIAssistantPage = () => {
 
   // ─── Lang labels ─────────────────────────────────────────────────────────────
   const L = {
-    newChat:     isHindi ? '✏️ नई बातचीत' : '✏️ New Chat',
-    chatHistory: isHindi ? '💬 बातचीत इतिहास' : '💬 Chat History',
-    search:      isHindi ? 'खोजें...' : 'Search conversations...',
-    online:      isHindi ? 'ऑनलाइन' : 'Online',
-    welcome:     isHindi ? 'नागरिक सेवा पोर्टल' : 'Citizen Service Portal',
-    subtitle:    isHindi
-      ? 'सरकारी योजनाओं, शिकायतों, या प्रमाणपत्रों के बारे में हिंदी या अंग्रेज़ी में पूछें।'
-      : 'Ask anything about government services, schemes, complaints, or civic queries. Available in Hindi & English.',
-    placeholder: isHindi ? 'पूछें या बोलें... 🎤' : 'Ask anything about government services...',
-    footer:      isHindi
-      ? '🔒 सुरक्षित · आधिकारिक सरकारी डेटा · DigiLocker एकीकृत · ⌨️ Shift+Enter नई पंक्ति'
-      : '🔒 Secured · Official Government Data · DigiLocker Integrated · ⌨️ Shift+Enter for new line',
+    newChat:     t('aiNewChat'),
+    chatHistory: t('aiChatHistory'),
+    search:      t('aiSearchConversations'),
+    online:      t('aiOnline'),
+    welcome:     t('aiWelcomeTitle'),
+    subtitle:    t('aiWelcomeSubtitle'),
+    placeholder: t('aiPlaceholder'),
+    footer:      t('aiFooter'),
   };
 
   return (
@@ -700,7 +716,7 @@ const AIAssistantPage = () => {
       {/* Drag overlay */}
       {dragOver && (
         <div className="ai-drag-overlay">
-          � Drop image or PDF here to attach
+          {t('aiDropHere')}
         </div>
       )}
 
@@ -748,10 +764,10 @@ const AIAssistantPage = () => {
           {/* Sessions list */}
           <div className="ai-history-list">
             {sessionsLoading ? (
-              <p className="ai-history-empty">Loading…</p>
+              <p className="ai-history-empty">{t('aiLoadingChats')}</p>
             ) : filteredSessions.length === 0 ? (
               <p className="ai-history-empty">
-                {searchQuery ? 'No results' : 'No conversations yet'}
+                {searchQuery ? t('aiNoResults') : t('aiNoConversations')}
               </p>
             ) : (
               filteredSessions.map(sess => (
@@ -762,8 +778,8 @@ const AIAssistantPage = () => {
                 >
                   <span className="ai-history-icon">💬</span>
                   <div className="ai-history-info">
-                    <p className="ai-history-title">{sess.title || 'New Chat'}</p>
-                    <p className="ai-history-time">{formatSessionTime(sess.updatedAt)}</p>
+                    <p className="ai-history-title">{sess.title || t('aiNewChatFallback')}</p>
+                    <p className="ai-history-time">{formatSessionTime(sess.updatedAt, t)}</p>
                   </div>
                   <button
                     className="ai-history-delete"
@@ -783,7 +799,7 @@ const AIAssistantPage = () => {
             </div>
             <div className="ai-user-meta">
               <p className="ai-user-name">{user?.fullName || 'Citizen'}</p>
-              <p className="ai-user-aadhaar">Aadhaar: {maskedAadhaar}</p>
+              <p className="ai-user-aadhaar">{t('aiAadhaarPrefix')} {maskedAadhaar}</p>
             </div>
           </div>
         </aside>
@@ -809,8 +825,8 @@ const AIAssistantPage = () => {
               </button>
 
               <div className="ai-online-dot" title={L.online}></div>
-              <span className="ai-chat-title">Citizen Services Assistant</span>
-              <span className="ai-powered-badge">✨ AI Powered</span>
+              <span className="ai-chat-title">{t('aiChatTitle')}</span>
+              <span className="ai-powered-badge">{t('aiPoweredBadge')}</span>
             </div>
 
             <div className="ai-chat-header-right">
@@ -819,10 +835,10 @@ const AIAssistantPage = () => {
               <button className="ai-icon-btn" aria-label="Settings" title="Settings">⚙️</button>
               <button
                 className="ai-lang-toggle"
-                onClick={() => setIsHindi(prev => !prev)}
+                onClick={() => i18n.changeLanguage(isHindi ? 'en' : 'hi')}
                 aria-label="Toggle language"
               >
-                {isHindi ? '🇬🇧 English' : '🇮🇳 हिंदी'}
+                {isHindi ? t('aiSwitchToEnglish') : t('aiSwitchToHindi')}
               </button>
             </div>
           </div>
@@ -888,13 +904,13 @@ const AIAssistantPage = () => {
                                     onClick={() => window.open(scheme.official_link, '_blank')}
                                     disabled={!scheme.official_link}
                                   >
-                                    Apply Now →
+                                    {t('aiApplyNow')}
                                   </button>
                                   <button
                                     className="ai-scheme-btn ai-know-more-btn"
                                     onClick={() => window.location.href = `/schemes/${scheme.schemeId}`}
                                   >
-                                    Know More
+                                    {t('aiKnowMore')}
                                   </button>
                                 </div>
                               </div>
@@ -939,9 +955,9 @@ const AIAssistantPage = () => {
                   disabled={isComparing}
                 >
                   {isComparing ? (
-                    <><span className="ai-compare-spinner" /> Comparing…</>
+                    <><span className="ai-compare-spinner" /> {t('aiComparing')}</>
                   ) : (
-                    <>⚖️ Compare These Schemes</>
+                    <>{t('aiCompareSchemes')}</>
                   )}
                 </button>
               </div>
@@ -953,7 +969,7 @@ const AIAssistantPage = () => {
             <div className="ai-recording-bar">
               <div className="recording-dot"></div>
               <span className="recording-label">
-                {isHindi ? 'सुन रहा हूँ... बोलिए' : 'Listening... speak now'}
+                {t('aiListening')}
               </span>
             </div>
           )}

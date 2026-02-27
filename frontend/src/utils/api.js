@@ -10,18 +10,25 @@ const api = axios.create({
   }
 });
 
-// Add token to requests if available
+// Add token + ?lng= to every request
 api.interceptors.request.use(
   (config) => {
+    // Auth token
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Dynamic translation — append ?lng=<code> so the backend translates
+    // all database content at render time without touching the DB.
+    const lang = localStorage.getItem('language') || 'en';
+    if (lang && lang !== 'en') {
+      config.params = { ...config.params, lng: lang };
+    }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default api;

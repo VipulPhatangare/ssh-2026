@@ -13,8 +13,8 @@ const scoreColor = (score) => {
 };
 
 const SchemeExplorer = () => {
-  const { t } = useTranslation();
-  const { eligibleSchemes, eligibleLoading, refreshEligibleSchemes } = useContext(AuthContext);
+  const { t, i18n } = useTranslation();
+  const { user, eligibleSchemes, eligibleLoading, refreshEligibleSchemes, ensureEligibleSchemes } = useContext(AuthContext);
   const [schemes, setSchemes] = useState([]);
   const [filter, setFilter] = useState('eligible');
   const [loading, setLoading] = useState(true);
@@ -26,6 +26,13 @@ const SchemeExplorer = () => {
     // 'eligible' tab uses n8n context data — no backend fetch needed
     if (filter !== 'eligible') fetchSchemes();
   }, [filter]);
+
+  // Re-fetch eligible schemes from the webhook + translate whenever the
+  // display language changes. The language-aware cache in AuthContext
+  // ensures the webhook is only called once per day per language.
+  useEffect(() => {
+    if (user?._id) ensureEligibleSchemes(user._id);
+  }, [i18n.language]);
 
   const fetchSchemes = async () => {
     try {
@@ -57,8 +64,8 @@ const SchemeExplorer = () => {
 
       // Check search query
       const searchLower = searchQuery.toLowerCase();
-      const nameMatch = scheme.name.toLowerCase().includes(searchLower);
-      const descriptionMatch = scheme.description.toLowerCase().includes(searchLower);
+      const nameMatch = (scheme.name || '').toLowerCase().includes(searchLower);
+      const descriptionMatch = (scheme.description || '').toLowerCase().includes(searchLower);
       const searchMatch = nameMatch || descriptionMatch;
 
       return departmentMatch && searchMatch;

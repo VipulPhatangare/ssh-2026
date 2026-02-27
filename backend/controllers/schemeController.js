@@ -13,6 +13,7 @@ exports.getAllSchemes = async (req, res, next) => {
   try {
     const schemes = await Scheme.find({ isActive: true });
 
+    res.translateFields = ['data'];   // translate only human-readable scheme fields
     res.status(200).json({
       success: true,
       count: schemes.length,
@@ -47,6 +48,7 @@ exports.getSchemeById = async (req, res, next) => {
       });
     }
 
+    res.translateFields = ['data'];
     res.status(200).json({
       success: true,
       data: scheme
@@ -79,6 +81,7 @@ exports.resolveSchemeId = async (req, res, next) => {
       });
     }
 
+    res.translateFields = ['data'];
     return res.status(200).json({
       success: true,
       data: {
@@ -100,6 +103,7 @@ exports.getEligibleSchemes = async (req, res, next) => {
     const user = req.user;
     const { eligible, all } = await findEligibleSchemes(user);
 
+    res.translateFields = ['eligible', 'recommended'];
     res.status(200).json({
       success: true,
       eligibleCount: eligible.length,
@@ -120,6 +124,7 @@ exports.getUnclaimedSchemes = async (req, res, next) => {
     const user = req.user;
     const unclaimedSchemes = await findUnclaimedSchemes(userId, user);
 
+    res.translateFields = ['data'];
     res.status(200).json({
       success: true,
       count: unclaimedSchemes.length,
@@ -137,6 +142,7 @@ exports.getSchemesByLifeEvent = async (req, res, next) => {
   try {
     const schemes = await getSchemesByLifeEvent(req.params.event);
 
+    res.translateFields = ['data'];
     res.status(200).json({
       success: true,
       count: schemes.length,
@@ -172,6 +178,7 @@ exports.checkSchemeDocuments = async (req, res, next) => {
       scheme.requiredDocuments
     );
 
+    res.translateFields = ['data'];   // translate document names in the status object
     res.status(200).json({
       success: true,
       data: documentStatus
@@ -188,6 +195,7 @@ exports.createScheme = async (req, res, next) => {
   try {
     const scheme = await Scheme.create(req.body);
 
+    res.noTranslate = true;   // admin write — return raw English
     res.status(201).json({
       success: true,
       data: scheme
@@ -214,6 +222,7 @@ exports.updateScheme = async (req, res, next) => {
       });
     }
 
+    res.noTranslate = true;   // admin write — return raw English
     res.status(200).json({
       success: true,
       data: scheme
@@ -237,6 +246,7 @@ exports.deleteScheme = async (req, res, next) => {
       });
     }
 
+    res.noTranslate = true;   // admin write — return raw English
     res.status(200).json({
       success: true,
       message: 'Scheme deleted successfully'
@@ -325,6 +335,7 @@ exports.chatAboutScheme = async (req, res, next) => {
       // console.log(JSON.stringify(data, null, 2));
       // console.log('=====================================\n');
 
+      res.translateFields = ['output'];   // translate only the user-visible AI reply
       res.status(200).json({
         success: true,
         output: data.output || 'Unable to process your question. Please try again.',
@@ -445,6 +456,7 @@ exports.predictApproval = async (req, res, next) => {
       });
     }
 
+    res.noTranslate = true;   // numeric prediction data — no translation needed
     return res.status(200).json({
       success   : true,
       schemeId  : 'S0002',
@@ -496,6 +508,7 @@ exports.analyzeDocuments = async (req, res, next) => {
     // n8n may return an array (single-item) or an object
     const data = Array.isArray(raw) ? raw[0] : raw;
 
+    res.translateFields = ['analysis'];   // translate the LLM analysis result
     return res.status(200).json({ success: true, analysis: data });
   } catch (error) {
     next(error);

@@ -13,14 +13,18 @@ const {
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
+
+// Disable translation for all auth routes — user names, emails, tokens must
+// never be modified by the translation layer.
+const noTranslate = (req, res, next) => { res.noTranslate = true; next(); };
 const { documentUpload } = require('../config/multer');
 const { getGridFSBucket } = require('../config/gridfs');
 const mongoose = require('mongoose');
 
-router.post('/register', validateRegistration, register);
-router.post('/login', validateLogin, login);
-router.post('/logout', protect, logout);
-router.get('/me', protect, getMe);
+router.post('/register', noTranslate, validateRegistration, register);
+router.post('/login',    noTranslate, validateLogin, login);
+router.post('/logout',   noTranslate, protect, logout);
+router.get('/me',        noTranslate, protect, getMe);
 
 // GridFS multer middleware for file uploads
 const gridfsMulterMiddleware = (req, res, next) => {
@@ -44,8 +48,8 @@ const gridfsMulterMiddleware = (req, res, next) => {
   }
 };
 
-router.put('/update-profile', protect, gridfsMulterMiddleware, updateProfile);
-router.put('/update-password', protect, updatePassword);
+router.put('/update-profile',  noTranslate, protect, gridfsMulterMiddleware, updateProfile);
+router.put('/update-password', noTranslate, protect, updatePassword);
 
 // Document retrieval routes
 router.get('/download-document/:fileId', protect, downloadDocument);

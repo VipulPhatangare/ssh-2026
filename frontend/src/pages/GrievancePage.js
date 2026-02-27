@@ -44,7 +44,7 @@ const GrievancePage = () => {
       fetchData();
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      setMessage(error.response?.data?.message || t('grievanceFailed'));
+      setMessage(error.response?.data?.message || 'Failed to submit grievance');
     }
   };
 
@@ -65,9 +65,9 @@ const GrievancePage = () => {
     <div className="grievance-page">
       <div className="container">
         <div className="page-header">
-          <h1>{t('grievancePage')}</h1>
+          <h1>{t('grievances')}</h1>
           <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
-            {showForm ? t('cancel') : t('raiseNewGrievance')}
+            {showForm ? t('cancel') : t('raiseGrievance')}
           </button>
         </div>
 
@@ -79,7 +79,7 @@ const GrievancePage = () => {
 
         {showForm && (
           <div className="card">
-            <h2>{t('submitNewGrievance')}</h2>
+            <h2>{t('submitGrievanceTitle')}</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>{t('selectApplication')}</label>
@@ -103,12 +103,12 @@ const GrievancePage = () => {
                   rows="5"
                   value={formData.complaintText}
                   onChange={(e) => setFormData({...formData, complaintText: e.target.value})}
-                  placeholder={t('complaintPlaceholder')}
+                  placeholder={t('describeIssue')}
                   required
                 ></textarea>
               </div>
 
-              <button type="submit" className="btn btn-primary">{t('submitGrievance')}</button>
+              <button type="submit" className="btn btn-primary">{t('submitGrievanceBtn')}</button>
             </form>
           </div>
         )}
@@ -124,7 +124,7 @@ const GrievancePage = () => {
                 <div className="grievance-header">
                   <div>
                     <h3>{grievance.applicationId?.schemeId?.name}</h3>
-                    <p className="grievance-number">{t('grievanceNo')}: {grievance.grievanceNumber}</p>
+                    <p className="grievance-number">{t('grievanceNo', { num: grievance.grievanceNumber })}</p>
                   </div>
                   <span className={`badge badge-${getStatusColor(grievance.status)}`}>
                     {grievance.status}
@@ -134,13 +134,13 @@ const GrievancePage = () => {
                 <p className="complaint-text">{grievance.complaintText}</p>
 
                 <div className="grievance-meta">
-                  <span>{t('escalationLevel')}: {grievance.escalationLevel}</span>
-                  <span>{t('created')}: {new Date(grievance.createdAt).toLocaleDateString()}</span>
+                  <span>{t('escalationLevel', { level: grievance.escalationLevel })}</span>
+                  <span>{t('createdOn', { date: new Date(grievance.createdAt).toLocaleDateString() })}</span>
                 </div>
 
                 {grievance.responses.length > 0 && (
                   <div className="responses-section">
-                    <h4>{t('responses')}:</h4>
+                    <h4>{t('responses')}</h4>
                     {grievance.responses.map((response, index) => (
                       <div key={index} className="response-item">
                         <strong>{response.respondent}</strong>
