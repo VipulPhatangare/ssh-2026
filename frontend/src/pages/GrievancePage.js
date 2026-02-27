@@ -1,118 +1,43 @@
-import React, { useState, useContext, useRef } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import './GrievancePage.css';
 
 const GrievancePage = () => {
-  const { user } = useContext(AuthContext);
-  const fileInputRef = useRef(null);
-
+  const { t } = useTranslation();
+  const [grievances, setGrievances] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.fullName || '',
-    image: null,
-    description: '',
-    location: ''
+    applicationId: '',
+    complaintText: ''
   });
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
 
-  const [imagePreview, setImagePreview] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [dragActive, setDragActive] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  // Upload image to backend Cloudinary endpoint
-  const uploadToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('message', 'Grievance photo');
-
+  const fetchData = async () => {
     try {
-      const response = await api.post('/ai/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      return response.data.imageUrl;
+      const [grievancesRes, applicationsRes] = await Promise.all([
+        api.get('/grievances/my-grievances'),
+        api.get('/applications/my-applications')
+      ]);
+      setGrievances(grievancesRes.data.data);
+      setApplications(applicationsRes.data.data);
     } catch (error) {
-      console.error('Upload error:', error);
-      throw new Error('Failed to upload image');
-    }
-  };
-
-  const handleImageSelect = async (file) => {
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setMessage({ type: 'error', text: 'Please select a valid image file' });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'Image size should be less than 5MB' });
-      return;
-    }
-
-    // Show preview
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result);
-    reader.readAsDataURL(file);
-
-    // Upload to Cloudinary
-    setUploading(true);
-    setMessage({ type: '', text: '' });
-    try {
-      const imageUrl = await uploadToCloudinary(file);
-      setFormData(prev => ({ ...prev, image: imageUrl }));
-      setMessage({ type: 'success', text: 'Image uploaded successfully!' });
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message });
-      setImagePreview(null);
+      console.error('Error fetching data:', error);
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) handleImageSelect(file);
-  };
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleImageSelect(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.image) {
-      setMessage({ type: 'error', text: 'Please upload an image' });
-      return;
-    }
-
-    if (!formData.location) {
-      setMessage({ type: 'error', text: 'Please provide location' });
-      return;
-    }
-
-    setSubmitting(true);
-    setMessage({ type: '', text: '' });
-
     try {
+<<<<<<< HEAD
       const payload = {
         name: formData.name,
         image_url: formData.image,
@@ -158,165 +83,43 @@ const GrievancePage = () => {
       });
       setImagePreview(null);
       
+=======
+      await api.post('/grievances', formData);
+      setMessage(t('grievanceSubmitted'));
+      setShowForm(false);
+      setFormData({ applicationId: '', complaintText: '' });
+      fetchData();
+      setTimeout(() => setMessage(''), 3000);
+>>>>>>> 9c7f4c0f5b2d007e003e00220a45f8ad05bfb171
     } catch (error) {
-      console.error('Submit error:', error);
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || error.message || 'Failed to submit grievance. Please try again.' 
-      });
-    } finally {
-      setSubmitting(false);
+      setMessage(error.response?.data?.message || t('grievanceFailed'));
     }
   };
 
-  const removeImage = () => {
-    setFormData(prev => ({ ...prev, image: null }));
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'Resolved': return 'success';
+      case 'Open': return 'warning';
+      case 'Escalated': return 'danger';
+      default: return 'info';
+    }
   };
 
+  if (loading) {
+    return <div className="loading">{t('loading')}</div>;
+  }
+
   return (
-    <div className="grv-page">
-      <div className="grv-container">
-        
-        {/* Header */}
-        <div className="grv-header">
-          <div>
-            <h1 className="grv-title">📣 File a Grievance</h1>
-            <p className="grv-subtitle">Report issues with photo evidence and we'll help resolve them</p>
-          </div>
+    <div className="grievance-page">
+      <div className="container">
+        <div className="page-header">
+          <h1>{t('grievancePage')}</h1>
+          <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
+            {showForm ? t('cancel') : t('raiseNewGrievance')}
+          </button>
         </div>
 
-        {/* Alert Message */}
-        {message.text && (
-          <div className={`grv-alert ${message.type === 'success' ? 'grv-alert-success' : 'grv-alert-error'}`}>
-            <span className="grv-alert-icon">
-              {message.type === 'success' ? '✓' : '⚠'}
-            </span>
-            {message.text}
-          </div>
-        )}
-
-        {/* Main Form */}
-        <form className="grv-form" onSubmit={handleSubmit}>
-          
-          {/* Image Upload Section */}
-          <div className="grv-section">
-            <label className="grv-label">
-              <span className="grv-label-text">Upload Evidence Photo *</span>
-              <span className="grv-label-hint">Required - JPG, PNG or WEBP, max 5MB</span>
-            </label>
-
-            {!imagePreview ? (
-              <div
-                className={`grv-upload-zone ${dragActive ? 'grv-drag-active' : ''}`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-                
-                <div className="grv-upload-icon">
-                  {uploading ? '⏳' : '📸'}
-                </div>
-                <p className="grv-upload-text">
-                  {uploading ? 'Uploading...' : 'Click to upload or drag and drop'}
-                </p>
-                <p className="grv-upload-hint">Photo of the issue/problem</p>
-              </div>
-            ) : (
-              <div className="grv-image-preview">
-                <img src={imagePreview} alt="Preview" className="grv-preview-img" />
-                <button
-                  type="button"
-                  className="grv-remove-btn"
-                  onClick={removeImage}
-                  disabled={uploading}
-                >
-                  ✕
-                </button>
-                {uploading && <div className="grv-upload-overlay">Uploading...</div>}
-              </div>
-            )}
-          </div>
-
-          {/* Name Field */}
-          <div className="grv-section">
-            <label className="grv-label" htmlFor="name">
-              <span className="grv-label-text">Your Name *</span>
-            </label>
-            <input
-              id="name"
-              type="text"
-              className="grv-input"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter your full name"
-              required
-            />
-          </div>
-
-          {/* Location Field */}
-          <div className="grv-section">
-            <label className="grv-label" htmlFor="location">
-              <span className="grv-label-text">Location / Address *</span>
-              <span className="grv-label-hint">Where is the issue located?</span>
-            </label>
-            <input
-              id="location"
-              type="text"
-              className="grv-input"
-              value={formData.location}
-              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              placeholder="e.g., Ward 5, Near Main Market, Bhopal"
-              required
-            />
-          </div>
-
-          {/* Description Field (Optional) */}
-          <div className="grv-section">
-            <label className="grv-label" htmlFor="description">
-              <span className="grv-label-text">Description</span>
-              <span className="grv-label-hint grv-optional">Optional</span>
-            </label>
-            <textarea
-              id="description"
-              className="grv-textarea"
-              rows="4"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Provide additional details about the issue (optional)..."
-            />
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="grv-submit-btn"
-            disabled={submitting || uploading || !formData.image}
-          >
-            {submitting ? (
-              <>
-                <span className="grv-spinner" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                <span>📤</span>
-                Submit Grievance
-              </>
-            )}
-          </button>
-        </form>
-
+<<<<<<< HEAD
         {/* AI Analysis Result */}
         {analysisResult && (
           <div className="grv-analysis-box">
@@ -365,28 +168,93 @@ const GrievancePage = () => {
                 📋 Copy Draft
               </button>
             </div>
+=======
+        {message && (
+          <div className={`alert ${message.includes('success') ? 'alert-success' : 'alert-error'}`}>
+            {message}
+>>>>>>> 9c7f4c0f5b2d007e003e00220a45f8ad05bfb171
           </div>
         )}
 
-        {/* Info Box */}
-        <div className="grv-info-box">
-          <h3 className="grv-info-title">💡 How it works</h3>
-          <ul className="grv-info-list">
-            <li>
-              <strong>1. Upload Photo:</strong> Take a clear picture of the issue/problem
-            </li>
-            <li>
-              <strong>2. Add Location:</strong> Specify where the issue is located
-            </li>
-            <li>
-              <strong>3. Submit:</strong> Your grievance will be reviewed by our team
-            </li>
-            <li>
-              <strong>4. Track:</strong> You'll receive updates on resolution progress
-            </li>
-          </ul>
-        </div>
+        {showForm && (
+          <div className="card">
+            <h2>{t('submitNewGrievance')}</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>{t('selectApplication')}</label>
+                <select
+                  value={formData.applicationId}
+                  onChange={(e) => setFormData({...formData, applicationId: e.target.value})}
+                  required
+                >
+                  <option value="">{t('selectApplicationPlaceholder')}</option>
+                  {applications.map((app) => (
+                    <option key={app._id} value={app._id}>
+                      {app.schemeId?.name} - {app.applicationNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
+              <div className="form-group">
+                <label>{t('complaintDetails')}</label>
+                <textarea
+                  rows="5"
+                  value={formData.complaintText}
+                  onChange={(e) => setFormData({...formData, complaintText: e.target.value})}
+                  placeholder={t('complaintPlaceholder')}
+                  required
+                ></textarea>
+              </div>
+
+              <button type="submit" className="btn btn-primary">{t('submitGrievance')}</button>
+            </form>
+          </div>
+        )}
+
+        <div className="grievances-list">
+          {grievances.length === 0 ? (
+            <div className="alert alert-info">
+              {t('noGrievances')}
+            </div>
+          ) : (
+            grievances.map((grievance) => (
+              <div key={grievance._id} className="card grievance-card">
+                <div className="grievance-header">
+                  <div>
+                    <h3>{grievance.applicationId?.schemeId?.name}</h3>
+                    <p className="grievance-number">{t('grievanceNo')}: {grievance.grievanceNumber}</p>
+                  </div>
+                  <span className={`badge badge-${getStatusColor(grievance.status)}`}>
+                    {grievance.status}
+                  </span>
+                </div>
+
+                <p className="complaint-text">{grievance.complaintText}</p>
+
+                <div className="grievance-meta">
+                  <span>{t('escalationLevel')}: {grievance.escalationLevel}</span>
+                  <span>{t('created')}: {new Date(grievance.createdAt).toLocaleDateString()}</span>
+                </div>
+
+                {grievance.responses.length > 0 && (
+                  <div className="responses-section">
+                    <h4>{t('responses')}:</h4>
+                    {grievance.responses.map((response, index) => (
+                      <div key={index} className="response-item">
+                        <strong>{response.respondent}</strong>
+                        <p>{response.message}</p>
+                        <span className="response-date">
+                          {new Date(response.date).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

@@ -3,15 +3,24 @@
    =================================== */
 
 .scheme-details-page {
-  padding: 40px 0;
-  min-height: calc(100vh - 70px);
+  /* Fill exactly the viewport below the sticky navbar (70px tall).
+     overflow: hidden prevents body scroll — only the inner columns scroll. */
+  height: calc(100vh - 70px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background-color: #f9f9f9;
 }
 
 .scheme-details-page .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  /* Top/bottom padding keeps content off the edges; left/right stays 20px */
+  padding: 16px 20px 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* ===================================
@@ -27,8 +36,13 @@
   font-weight: 600;
   cursor: pointer;
   padding: 8px 0;
-  margin-bottom: 30px;
+  /* Reduced from 30px — reclaims height in the viewport-constrained layout */
+  margin-bottom: 12px;
   transition: all 0.3s ease;
+  /* prevent the back button from shrinking when the flex column is tight */
+  flex-shrink: 0;
+  /* pin to the left edge of the flex-column container */
+  align-self: flex-start;
 }
 
 .btn-back:hover {
@@ -43,15 +57,25 @@
 .scheme-details-wrapper {
   display: flex;
   gap: 25px;
-  align-items: flex-start;
+  /* stretch makes both columns fill the same height */
+  align-items: stretch;
+  /* flex: 1 + min-height: 0 lets this row shrink to fit the remaining
+     space after the back-button, without overflowing the page */
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .scheme-details-card {
-  flex: 0 0 70%;
+  /* flex: 2 gives this column 2/3 of the available width */
+  flex: 2;
+  min-width: 0;
   background-color: white;
   border-radius: 8px;
   padding: 40px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  /* independent scroll — only this column scrolls, not the whole page */
+  overflow-y: auto;
 }
 
 /* ===================================
@@ -201,16 +225,18 @@
    =================================== */
 
 .chat-panel {
-  flex: 0 0 30%;
+  /* flex: 0 0 380px keeps chat at a comfortable fixed width;
+     height is inherited from the parent flex row — no explicit height needed. */
+  flex: 0 0 380px;
   background-color: white;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
   display: flex;
   flex-direction: column;
-  height: 680px;
-  position: sticky;
-  top: 100px;
+  /* No sticky/fixed positioning — the parent wrapper already controls height.
+     overflow: hidden clips any runaway children so only .chat-messages scrolls. */
+  overflow: hidden;
 }
 
 .chat-header {
@@ -265,6 +291,9 @@
 
 .chat-messages {
   flex: 1;
+  /* min-height: 0 is CRITICAL — without it a flex child cannot shrink
+     below its content height, so overflow-y: auto never activates */
+  min-height: 0;
   overflow-y: auto;
   padding: 20px;
   display: flex;
@@ -630,43 +659,59 @@
 
 @media (max-width: 1024px) {
   .scheme-details-wrapper {
-    gap: 20px;
+    gap: 16px;
   }
 
   .scheme-details-card {
-    flex: 0 0 68%;
+    /* left column still grows to fill remaining space */
+    flex: 1 1 0;
+    min-width: 0;
     padding: 30px;
   }
 
   .chat-panel {
-    flex: 0 0 32%;
-    height: 600px;
+    /* fixed pixel width so it doesn't get too narrow on tablets;
+       height is inherited from parent — no explicit height at this breakpoint */
+    flex: 0 0 300px;
   }
 }
 
 @media (max-width: 768px) {
   .scheme-details-page {
+    /* On mobile the columns stack vertically, so revert to natural page height
+       and let the browser scroll normally */
+    height: auto;
+    overflow: visible;
     padding: 20px 0;
   }
 
   .scheme-details-page .container {
-    padding: 0 15px;
+    height: auto;
+    padding: 16px 15px 20px;
   }
 
   .scheme-details-wrapper {
     flex-direction: column;
     gap: 20px;
+    /* revert flex-row constraints so natural column flow works */
+    flex: none;
+    overflow: visible;
+    min-height: unset;
   }
 
   .scheme-details-card {
     flex: 0 0 auto;
     padding: 25px;
+    /* revert independent scroll — full page scroll on mobile is fine */
+    overflow-y: visible;
   }
 
   .chat-panel {
+    /* Stacked below details: fixed height so chat doesn't collapse */
     flex: 0 0 auto;
-    height: 500px;
-    position: static;
+    height: 480px;
+    border-radius: 10px;
+    overflow: hidden;
   }
 
   .scheme-title {
@@ -763,7 +808,7 @@
 
 @media (max-width: 480px) {
   .scheme-details-page .container {
-    padding: 0 12px;
+    padding: 12px 12px 16px;
   }
 
   .btn-back {

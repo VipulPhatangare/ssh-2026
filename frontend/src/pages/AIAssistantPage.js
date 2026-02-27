@@ -795,7 +795,7 @@ const AIAssistantPage = () => {
         />
 
         {/* ──────── MAIN PANEL ──────── */}
-        <div className="ai-main">
+        <div className={`ai-main${messages.length === 0 ? ' ai-main--empty' : ''}`}>
           {/* Header */}
           <div className="ai-chat-header">
             <div className="ai-chat-header-left">
