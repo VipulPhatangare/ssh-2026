@@ -40,11 +40,11 @@ router.post('/submit-photo', protect, async (req, res) => {
       console.log('Payload:', JSON.stringify(webhookPayload, null, 2));
       
       const webhookResponse = await axios.post(
-        'https://synthomind.cloud/webhook/image-chat',
+        'https://synthomind.cloud/webhook-test/image-chat',
         webhookPayload,
         { 
           headers: { 'Content-Type': 'application/json' },
-          timeout: 45000  // Increased to 45 seconds for AI processing
+          timeout: 45000
         }
       );
       webhookSuccess = true;

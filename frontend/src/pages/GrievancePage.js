@@ -1,10 +1,12 @@
-﻿import React, { useState, useContext } from 'react';
+﻿import React, { useState, useContext, useRef } from 'react';
 import api from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
 import './GrievancePage.css';
 
 const GrievancePage = () => {
   const { user } = useContext(AuthContext);
+  const fileInputRef = useRef(null);
+
   const [formData, setFormData] = useState({
     name: user?.fullName || '',
     image: null,
@@ -13,367 +15,331 @@ const GrievancePage = () => {
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [dragActive, setDragActive] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState({ show: false, type: '', text: '' });
+  const [step, setStep] = useState('form');
 
-  // Upload image to Cloudinary
+  const showToast = (type, text) => {
+    setToast({ show: true, type, text });
+    setTimeout(() => setToast({ show: false, type: '', text: '' }), 4000);
+  };
+
+  // Upload image to Cloudinary via backend
   const uploadToCloudinary = async (file) => {
     setUploading(true);
+    setUploadProgress(10);
     try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('image', file);
-
-      const response = await api.post('/ai/upload', uploadFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const fd = new FormData();
+      fd.append('file', file);
+      const response = await api.post('/ai/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          const pct = Math.round((e.loaded / e.total) * 80);
+          setUploadProgress(pct);
+        }
       });
-
-      setFormData(prev => ({ ...prev, image: response.data.url }));
-      setMessage({ type: 'success', text: 'Image uploaded successfully!' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      // uploadRoutes returns { imageUrl: '...' }
+      const cloudUrl = response.data.imageUrl || response.data.url;
+      if (!cloudUrl) throw new Error('No image URL returned from server');
+      setFormData(prev => ({ ...prev, image: cloudUrl }));
+      setUploadProgress(100);
+      showToast('success', '✅ Image uploaded to cloud!');
     } catch (error) {
       console.error('Upload error:', error);
-      setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to upload image' });
+      showToast('error', error.response?.data?.error || 'Failed to upload image. Try again.');
+      setImagePreview(null);
     } finally {
       setUploading(false);
+      setTimeout(() => setUploadProgress(0), 800);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.image) {
-      setMessage({ type: 'error', text: 'Please upload an image first' });
+  const processFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Please select an image file (JPG, PNG, etc.)');
       return;
     }
-
-    if (!formData.location) {
-      setMessage({ type: 'error', text: 'Please enter a location' });
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('error', 'Image must be smaller than 5 MB');
       return;
     }
-
-    setSubmitting(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      const payload = {
-        name: formData.name,
-        image_url: formData.image,
-        description: formData.description || 'No description provided',
-        location: formData.location
-      };
-
-      console.log('📤 Submitting grievance:', payload);
-
-      // Call backend endpoint (which forwards to webhook)
-      const response = await api.post('/grievances/submit-photo', payload);
-
-      console.log('📨 Received response:', response.data);
-
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to submit grievance');
-      }
-
-      // Store analysis result from webhook
-      if (response.data.data?.analysis) {
-        console.log('✅ Analysis received:', response.data.data.analysis);
-        setAnalysisResult(response.data.data.analysis);
-        setMessage({ 
-          type: 'success', 
-          text: 'Grievance analyzed successfully! See the AI analysis below.' 
-        });
-      } else {
-        console.log('⚠️ No analysis in response. Full data:', response.data.data);
-        // Show webhook configuration note if available
-        const note = response.data.data?.webhookNote;
-        setMessage({ 
-          type: 'warning', 
-          text: note || 'Grievance submitted successfully! (AI analysis not available - webhook may need configuration)' 
-        });
-      }
-
-      // Reset form
-      setFormData({
-        name: user?.fullName || '',
-        image: null,
-        description: '',
-        location: ''
-      });
-      setImagePreview(null);
-      
-    } catch (error) {
-      console.error('❌ Submit error:', error);
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || error.message || 'Failed to submit grievance' 
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+    uploadToCloudinary(file);
   };
 
-  // Image file handling
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage({ type: 'error', text: 'Image size must be less than 5MB' });
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-      uploadToCloudinary(file);
-    }
-  };
+  const handleImageChange = (e) => processFile(e.target.files[0]);
 
-  // Drag and drop handlers
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    setDragActive(e.type === 'dragenter' || e.type === 'dragover');
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-        uploadToCloudinary(file);
+    processFile(e.dataTransfer.files?.[0]);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.image) { showToast('error', 'Please upload an image first'); return; }
+    if (!formData.location.trim()) { showToast('error', 'Please enter a location'); return; }
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: formData.name || user?.fullName || 'Anonymous',
+        image_url: formData.image,
+        description: formData.description || 'No description provided',
+        location: formData.location.trim()
+      };
+      const response = await api.post('/grievances/submit-photo', payload);
+      if (!response.data.success) throw new Error(response.data.message);
+      const analysis = response.data.data?.analysis;
+      if (analysis) {
+        setAnalysisResult(analysis);
+        setStep('result');
+        showToast('success', '🤖 AI analysis complete!');
       } else {
-        setMessage({ type: 'error', text: 'Please upload an image file' });
+        showToast('warning', 'Submitted! AI analysis unavailable right now.');
       }
+      setFormData({ name: user?.fullName || '', image: null, description: '', location: '' });
+      setImagePreview(null);
+    } catch (error) {
+      showToast('error', error.response?.data?.message || error.message || 'Submission failed');
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const extractText = (result) => {
+    if (!result) return '';
+    if (typeof result === 'string') return result;
+    return (
+      result.draft || result.output || result.response || result.text ||
+      result.choices?.[0]?.message?.content ||
+      result.message?.content ||
+      JSON.stringify(result, null, 2)
+    );
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(extractText(analysisResult));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="grv-page">
+
+      {/* Toast */}
+      {toast.show && (
+        <div className={`grv-toast grv-toast-${toast.type}`}>{toast.text}</div>
+      )}
+
       <div className="grv-container">
-        {/* Header */}
-        <div className="grv-header">
-          <h1 className="grv-title">📢 Report a Grievance</h1>
-          <p className="grv-subtitle">Upload a photo and get AI-powered complaint assistance</p>
+
+        {/* Hero */}
+        <div className="grv-hero">
+          <span className="grv-hero-badge">AI-Powered</span>
+          <h1 className="grv-hero-title">Report a Grievance</h1>
+          <p className="grv-hero-subtitle">
+            Upload a photo, add your location, and let AI draft your formal complaint in seconds.
+          </p>
+          <div className="grv-steps-indicator">
+            <div className={`grv-step-dot ${step === 'form' ? 'active' : 'done'}`}>
+              {step === 'result' ? '✓' : '1'}
+            </div>
+            <div className={`grv-step-line ${step === 'result' ? 'done' : ''}`} />
+            <div className={`grv-step-dot ${step === 'result' ? 'active' : ''}`}>2</div>
+          </div>
+          <div className="grv-steps-labels">
+            <span>Upload &amp; Submit</span>
+            <span>AI Analysis</span>
+          </div>
         </div>
 
-        {/* AI Analysis Result */}
-        {analysisResult && (
-          <div className="grv-analysis-box">
-            <h3 className="grv-analysis-title">🤖 AI-Generated Complaint Draft</h3>
-            <p className="grv-analysis-subtitle">
-              Copy this draft and use it to file your formal complaint
-            </p>
-            
-            {/* Draft Response */}
-            <div className="grv-draft-section">
-              <div className="grv-draft-content">
-                {(() => {
-                  // Handle different response formats from webhook
-                  if (typeof analysisResult === 'string') {
-                    return analysisResult;
-                  }
-                  if (analysisResult.draft) {
-                    return analysisResult.draft;
-                  }
-                  if (analysisResult.choices?.[0]?.message?.content) {
-                    return analysisResult.choices[0].message.content;
-                  }
-                  if (analysisResult.message?.content) {
-                    return analysisResult.message.content;
-                  }
-                  // Try to extract text from any structure
-                  return JSON.stringify(analysisResult, null, 2);
-                })()}
+        {step === 'form' ? (
+          <div className="grv-card">
+            <form onSubmit={handleSubmit} className="grv-form">
+
+              {/* Name */}
+              <div className="grv-field">
+                <label className="grv-field-label">
+                  <span>👤</span> Your Name
+                </label>
+                <input
+                  type="text"
+                  className="grv-input"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Your full name"
+                  required
+                />
               </div>
+
+              {/* Upload */}
+              <div className="grv-field">
+                <label className="grv-field-label">
+                  <span>📸</span> Grievance Photo <span className="grv-required">*</span>
+                </label>
+                <div
+                  className={`grv-dropzone${dragActive ? ' dz-drag' : ''}${imagePreview ? ' dz-filled' : ''}`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    style={{ display: 'none' }}
+                  />
+                  {imagePreview ? (
+                    <div className="grv-dz-preview">
+                      <img src={imagePreview} alt="Preview" className="grv-preview-img" />
+                      <div className="grv-dz-overlay">
+                        {uploading ? (
+                          <div className="grv-upload-status">
+                            <div className="grv-progress-bar">
+                              <div className="grv-progress-fill" style={{ width: `${uploadProgress}%` }} />
+                            </div>
+                            <span>Uploading {uploadProgress}%</span>
+                          </div>
+                        ) : (
+                          <span className="grv-change-hint">🔄 Click to change</span>
+                        )}
+                      </div>
+                      {formData.image && !uploading && (
+                        <div className="grv-uploaded-badge">✅ Uploaded</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grv-dz-placeholder">
+                      <div className="grv-dz-icon">{dragActive ? '🎯' : '📷'}</div>
+                      <p className="grv-dz-text">
+                        {dragActive ? 'Drop it here!' : 'Drag & drop or click to upload'}
+                      </p>
+                      <p className="grv-dz-hint">JPG, PNG — max 5 MB</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="grv-field">
+                <label className="grv-field-label">
+                  <span>📍</span> Location <span className="grv-required">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="grv-input"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="e.g. Bhopal, MP — Ward 12, Main Road"
+                  required
+                />
+              </div>
+
+              {/* Description */}
+              <div className="grv-field">
+                <label className="grv-field-label">
+                  <span>📝</span> Description <span className="grv-optional">(optional)</span>
+                </label>
+                <textarea
+                  className="grv-textarea"
+                  rows="3"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Any extra details about the issue..."
+                />
+              </div>
+
               <button
-                type="button"
-                className="grv-copy-btn"
-                onClick={() => {
-                  let text = analysisResult;
-                  if (typeof analysisResult !== 'string') {
-                    text = analysisResult.draft || 
-                           analysisResult.choices?.[0]?.message?.content || 
-                           analysisResult.message?.content ||
-                           JSON.stringify(analysisResult);
-                  }
-                  navigator.clipboard.writeText(text);
-                  setMessage({ type: 'success', text: 'Draft copied to clipboard!' });
-                  setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-                }}
+                type="submit"
+                className="grv-submit-btn"
+                disabled={uploading || submitting || !formData.image}
               >
-                📋 Copy Draft
+                {submitting ? (
+                  <><span className="grv-spinner" /> Analyzing with AI...</>
+                ) : uploading ? (
+                  <><span className="grv-spinner" /> Uploading image...</>
+                ) : (
+                  <>🚀 Submit &amp; Get AI Analysis</>
+                )}
+              </button>
+
+              {!formData.image && (
+                <p className="grv-submit-hint">⬆️ Upload a photo to enable submission</p>
+              )}
+            </form>
+          </div>
+        ) : (
+          /* Result */
+          <div className="grv-result-card">
+            <div className="grv-result-header">
+              <div className="grv-result-avatar">🤖</div>
+              <div>
+                <h2 className="grv-result-title">AI-Generated Complaint Draft</h2>
+                <p className="grv-result-sub">Review, copy and use this for your formal complaint</p>
+              </div>
+            </div>
+            <div className="grv-draft-box">
+              <pre className="grv-draft-text">{extractText(analysisResult)}</pre>
+            </div>
+            <div className="grv-result-actions">
+              <button className="grv-copy-btn" onClick={handleCopy}>
+                {copied ? '✅ Copied!' : '📋 Copy to Clipboard'}
+              </button>
+              <button className="grv-new-btn" onClick={() => { setStep('form'); setAnalysisResult(null); }}>
+                ➕ Submit Another
               </button>
             </div>
           </div>
         )}
 
-        {/* Alert Messages */}
-        {message.text && (
-          <div className={`grv-alert grv-alert-${message.type}`}>
-            {message.text}
-          </div>
-        )}
-
-        {/* Submission Form */}
-        <div className="grv-form-card">
-          <form onSubmit={handleSubmit} className="grv-form">
-            
-            {/* Name Field (Auto-filled) */}
-            <div className="grv-form-group">
-              <label className="grv-label">
-                <span className="grv-label-icon">👤</span>
-                Your Name
-              </label>
-              <input
-                type="text"
-                className="grv-input"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Auto-filled from profile"
-                required
-              />
+        {/* How it works */}
+        <div className="grv-how">
+          <h3 className="grv-how-title">How It Works</h3>
+          <div className="grv-how-grid">
+            <div className="grv-how-card">
+              <div className="grv-how-icon">📸</div>
+              <h4>Upload Photo</h4>
+              <p>Take or select a clear photo of the issue you want to report</p>
             </div>
-
-            {/* Image Upload */}
-            <div className="grv-form-group">
-              <label className="grv-label">
-                <span className="grv-label-icon">📸</span>
-                Upload Grievance Photo
-                <span className="grv-required">*</span>
-              </label>
-              <div
-                className={`grv-dropzone ${dragActive ? 'grv-dropzone-active' : ''} ${imagePreview ? 'grv-dropzone-filled' : ''}`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('image-input').click()}
-              >
-                <input
-                  id="image-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  style={{ display: 'none' }}
-                />
-                
-                {imagePreview ? (
-                  <div className="grv-preview">
-                    <img src={imagePreview} alt="Preview" className="grv-preview-img" />
-                    <div className="grv-preview-overlay">
-                      <span>Click to change image</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grv-dropzone-content">
-                    <div className="grv-upload-icon">☁️</div>
-                    <p className="grv-upload-text">
-                      {dragActive ? 'Drop image here' : 'Drag & drop or click to upload'}
-                    </p>
-                    <p className="grv-upload-hint">Supports: JPG, PNG (Max 5MB)</p>
-                  </div>
-                )}
-              </div>
-              {uploading && (
-                <p className="grv-uploading">⏳ Uploading to cloud...</p>
-              )}
+            <div className="grv-how-card">
+              <div className="grv-how-icon">📍</div>
+              <h4>Add Location</h4>
+              <p>Enter the exact location where the issue was observed</p>
             </div>
-
-            {/* Description (Optional) */}
-            <div className="grv-form-group">
-              <label className="grv-label">
-                <span className="grv-label-icon">📝</span>
-                Description
-                <span className="grv-optional">(Optional)</span>
-              </label>
-              <textarea
-                className="grv-textarea"
-                rows="4"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Provide additional details about your grievance..."
-              />
+            <div className="grv-how-card">
+              <div className="grv-how-icon">🤖</div>
+              <h4>Get AI Draft</h4>
+              <p>AI analyzes the image and generates a formal complaint letter</p>
             </div>
-
-            {/* Location */}
-            <div className="grv-form-group">
-              <label className="grv-label">
-                <span className="grv-label-icon">📍</span>
-                Location
-                <span className="grv-required">*</span>
-              </label>
-              <input
-                type="text"
-                className="grv-input"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Enter the location (e.g., Mumbai)"
-                required
-              />
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="grv-submit-btn"
-              disabled={uploading || submitting || !formData.image}
-            >
-              {submitting ? (
-                <>
-                  <span className="grv-spinner"></span>
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <span>🚀</span>
-                  Submit & Get AI Analysis
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Info Section */}
-        <div className="grv-info-box">
-          <div className="grv-info-item">
-            <span className="grv-info-icon">🤖</span>
-            <div>
-              <h4>AI-Powered Analysis</h4>
-              <p>Get instant complaint drafts generated by AI</p>
-            </div>
-          </div>
-          <div className="grv-info-item">
-            <span className="grv-info-icon">📋</span>
-            <div>
-              <h4>Ready-to-Use Drafts</h4>
-              <p>Copy and paste the generated text for filing</p>
-            </div>
-          </div>
-          <div className="grv-info-item">
-            <span className="grv-info-icon">⚡</span>
-            <div>
-              <h4>Quick Resolution</h4>
-              <p>Speed up your complaint process with AI assistance</p>
+            <div className="grv-how-card">
+              <div className="grv-how-icon">📋</div>
+              <h4>Copy &amp; File</h4>
+              <p>Copy the draft and submit it to the relevant authority</p>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
 };
 
 export default GrievancePage;
+

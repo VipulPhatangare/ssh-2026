@@ -139,7 +139,7 @@ router.post('/upload', protect, upload.single('file'), async (req, res) => {
     const uploadRecord = await Upload.create(uploadData);
 
     // Send to N8N webhook
-    const N8N_WEBHOOK_URL = 'https://synthomind.cloud/webhook-test/ssh-2026-main-chat-bot';
+    const N8N_WEBHOOK_URL = 'https://synthomind.cloud/webhook/ssh-2026-main-chat-bot';
     let n8nResponseData = null;
     let webhookSuccess = false;
     try {
