@@ -45,6 +45,14 @@ const SchemeDetails = () => {
   const [predLoading, setPredLoading]     = useState(false);
   const [predError, setPredError]         = useState(null);
 
+  // ── Document analysis states ──────────────────────────────────────────────
+  const [activeTab, setActiveTab]         = useState('predict');
+  const [docType, setDocType]             = useState('');
+  const [docFile, setDocFile]             = useState(null);
+  const [docAnalysis, setDocAnalysis]     = useState(null);
+  const [docLoading, setDocLoading]       = useState(false);
+  const [docError, setDocError]           = useState(null);
+
   useEffect(() => {
     fetchSchemeDetails();
   }, [id]);
@@ -113,6 +121,45 @@ const SchemeDetails = () => {
     setPredForm(PRED_FORM_DEFAULTS);
     setPredResult(null);
     setPredError(null);
+  };
+
+  const handleDocSubmit = async (e) => {
+    e.preventDefault();
+    if (!docFile || !docType) { setDocError('Please select a document type and upload a file.'); return; }
+    setDocLoading(true);
+    setDocAnalysis(null);
+    setDocError(null);
+    try {
+      // Read file as base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(docFile);
+      });
+      const res = await api.post('/schemes/S0002/analyze-document', {
+        documentType : docType,
+        fileName     : docFile.name,
+        fileBase64   : base64,
+        mimeType     : docFile.type,
+      });
+      if (res.data.success) {
+        setDocAnalysis(res.data.analysis);
+      } else {
+        setDocError(res.data.message || 'Analysis failed');
+      }
+    } catch (err) {
+      setDocError(err.response?.data?.message || 'Document analysis service unavailable. Please try again.');
+    } finally {
+      setDocLoading(false);
+    }
+  };
+
+  const handleDocReset = () => {
+    setDocFile(null);
+    setDocType('');
+    setDocAnalysis(null);
+    setDocError(null);
   };
 
   const handleSendMessage = async (e) => {
@@ -211,7 +258,7 @@ const SchemeDetails = () => {
               {scheme.schemeId === 'S0002' && (
                 <button
                   className="btn-predict btn-predict-header"
-                  onClick={() => { setShowPredictor(true); handlePredReset(); }}
+                  onClick={() => { setShowPredictor(true); handlePredReset(); handleDocReset(); setActiveTab('predict'); }}
                 >
                   🤖 Check Approval Chances
                 </button>
@@ -376,228 +423,351 @@ const SchemeDetails = () => {
       </div>
     </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          PREDICTION MODAL  (S0001 only)
-         ══════════════════════════════════════════════════════════════════════ */}
+      {/* ══ PREDICTION + DOCUMENT ANALYSIS MODAL (S0002 only) ══ */}
       {showPredictor && (
         <div className="pred-overlay" onClick={() => setShowPredictor(false)}>
           <div className="pred-modal" onClick={e => e.stopPropagation()}>
+
+            {/* ── Header ── */}
             <div className="pred-modal-header">
               <div>
-                <h2 className="pred-modal-title">🤖 Approval Prediction</h2>
-                <p className="pred-modal-subtitle">Kisan Kalyan Yojana (S0002) — Fill details below</p>
+                <h2 className="pred-modal-title">🌾 Kisan Kalyan Yojana</h2>
+                <p className="pred-modal-subtitle">AI-powered approval check &amp; document analysis</p>
               </div>
               <button className="pred-close-btn" onClick={() => setShowPredictor(false)}>✕</button>
             </div>
 
-            {!predResult ? (
-              <form onSubmit={handlePredSubmit} className="pred-form">
-                {/* ── Section 1: Location ── */}
-                <div className="pred-section">
-                  <h3 className="pred-section-title">📍 Location</h3>
-                  <div className="pred-field-row">
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.rural_flag}
-                        onChange={e => handlePredFieldChange('rural_flag', e.target.checked)} />
-                      <span className="pred-toggle-label">Rural area resident</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.mobile_linked_aadhaar}
-                        onChange={e => handlePredFieldChange('mobile_linked_aadhaar', e.target.checked)} />
-                      <span className="pred-toggle-label">Mobile linked to Aadhaar</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.bank_linked_aadhaar}
-                        onChange={e => handlePredFieldChange('bank_linked_aadhaar', e.target.checked)} />
-                      <span className="pred-toggle-label">Bank account linked to Aadhaar</span>
-                    </label>
+            {/* ── Tabs ── */}
+            <div className="pred-tabs">
+              <button
+                className={`pred-tab ${activeTab === 'predict' ? 'pred-tab-active' : ''}`}
+                onClick={() => setActiveTab('predict')}
+              >🔍 Predict Approval</button>
+              <button
+                className={`pred-tab ${activeTab === 'docs' ? 'pred-tab-active' : ''}`}
+                onClick={() => setActiveTab('docs')}
+              >📄 Analyze Document</button>
+            </div>
+
+            {/* ══ TAB 1 — PREDICT ══ */}
+            {activeTab === 'predict' && (
+              !predResult ? (
+                <form onSubmit={handlePredSubmit} className="pred-form">
+
+                  {/* Section 1 — Location */}
+                  <div className="pred-section">
+                    <div className="pred-section-header pred-sec-location">📍 Location &amp; Aadhaar</div>
+                    <div className="pred-cards-grid">
+                      {[
+                        ['rural_flag',            '🏘️', 'Rural area resident'],
+                        ['mobile_linked_aadhaar', '📱', 'Mobile linked to Aadhaar'],
+                        ['bank_linked_aadhaar',   '🔗', 'Bank linked to Aadhaar'],
+                      ].map(([field, icon, label]) => (
+                        <label key={field} className={`pred-card ${predForm[field] ? 'pred-card-on' : ''}`}>
+                          <span className="pred-card-icon">{icon}</span>
+                          <span className="pred-card-label">{label}</span>
+                          <span className={`pred-switch ${predForm[field] ? 'switch-on' : ''}`}>
+                            <span className="pred-switch-thumb" />
+                          </span>
+                          <input type="checkbox" checked={predForm[field]}
+                            onChange={e => handlePredFieldChange(field, e.target.checked)} />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section 2 — Land */}
+                  <div className="pred-section">
+                    <div className="pred-section-header pred-sec-land">🌾 Land Details</div>
+                    <div className="pred-cards-grid">
+                      {[
+                        ['land_registered',      '📋', 'Land registered in your name'],
+                        ['land_record_verified',  '✅', 'Land records verified'],
+                        ['land_dispute_flag',     '⚠️', 'Land under dispute'],
+                      ].map(([field, icon, label]) => (
+                        <label key={field} className={`pred-card ${predForm[field] ? 'pred-card-on' : ''} ${field === 'land_dispute_flag' ? 'pred-card-danger' : ''}`}>
+                          <span className="pred-card-icon">{icon}</span>
+                          <span className="pred-card-label">{label}</span>
+                          <span className={`pred-switch ${predForm[field] ? 'switch-on' : ''}`}>
+                            <span className="pred-switch-thumb" />
+                          </span>
+                          <input type="checkbox" checked={predForm[field]}
+                            onChange={e => handlePredFieldChange(field, e.target.checked)} />
+                        </label>
+                      ))}
+                    </div>
+                    <div className="pred-number-row">
+                      <div className="pred-number-field">
+                        <label className="pred-number-label">🌐 Land area (hectares)</label>
+                        <input type="number" step="0.01" min="0" placeholder="e.g. 1.5"
+                          value={predForm.land_area_hectare}
+                          onChange={e => handlePredFieldChange('land_area_hectare', e.target.value)}
+                          className="pred-number-input" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3 — PM-KISAN */}
+                  <div className="pred-section">
+                    <div className="pred-section-header pred-sec-kisan">🏛️ PM-KISAN Status</div>
+                    <div className="pred-cards-grid">
+                      {[
+                        ['pm_kisan_registered',     '📝', 'Registered in PM-KISAN'],
+                        ['pm_kisan_active',          '🟢', 'PM-KISAN account active'],
+                        ['pm_kisan_rejected_flag',   '🚫', 'Previously rejected'],
+                      ].map(([field, icon, label]) => (
+                        <label key={field} className={`pred-card ${predForm[field] ? 'pred-card-on' : ''} ${field === 'pm_kisan_rejected_flag' ? 'pred-card-danger' : ''}`}>
+                          <span className="pred-card-icon">{icon}</span>
+                          <span className="pred-card-label">{label}</span>
+                          <span className={`pred-switch ${predForm[field] ? 'switch-on' : ''}`}>
+                            <span className="pred-switch-thumb" />
+                          </span>
+                          <input type="checkbox" checked={predForm[field]}
+                            onChange={e => handlePredFieldChange(field, e.target.checked)} />
+                        </label>
+                      ))}
+                    </div>
+                    <div className="pred-number-row">
+                      <div className="pred-number-field">
+                        <label className="pred-number-label">💰 Installments received</label>
+                        <input type="number" min="0" max="20" placeholder="0–20"
+                          value={predForm.pm_kisan_installment_received}
+                          onChange={e => handlePredFieldChange('pm_kisan_installment_received', e.target.value)}
+                          className="pred-number-input" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 4 — Bank & DBT */}
+                  <div className="pred-section">
+                    <div className="pred-section-header pred-sec-bank">🏦 Bank &amp; DBT</div>
+                    <div className="pred-cards-grid">
+                      {[
+                        ['bank_account_valid',   '🏦', 'Bank account valid & active'],
+                        ['ifsc_valid',            '🔢', 'IFSC code valid'],
+                        ['dbt_enabled',           '💸', 'DBT enabled on account'],
+                        ['previous_dbt_failure',  '❌', 'Previous DBT failure'],
+                      ].map(([field, icon, label]) => (
+                        <label key={field} className={`pred-card ${predForm[field] ? 'pred-card-on' : ''} ${field === 'previous_dbt_failure' ? 'pred-card-danger' : ''}`}>
+                          <span className="pred-card-icon">{icon}</span>
+                          <span className="pred-card-label">{label}</span>
+                          <span className={`pred-switch ${predForm[field] ? 'switch-on' : ''}`}>
+                            <span className="pred-switch-thumb" />
+                          </span>
+                          <input type="checkbox" checked={predForm[field]}
+                            onChange={e => handlePredFieldChange(field, e.target.checked)} />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section 5 — Documents */}
+                  <div className="pred-section">
+                    <div className="pred-section-header pred-sec-docs">📄 Documents Uploaded</div>
+                    <div className="pred-cards-grid">
+                      {[
+                        ['land_doc_uploaded',        '🗺️', 'Land ownership document'],
+                        ['bank_passbook_uploaded',   '📔', 'Bank passbook / statement'],
+                        ['pm_kisan_proof_uploaded',  '📜', 'PM-KISAN registration proof'],
+                      ].map(([field, icon, label]) => (
+                        <label key={field} className={`pred-card ${predForm[field] ? 'pred-card-on' : ''}`}>
+                          <span className="pred-card-icon">{icon}</span>
+                          <span className="pred-card-label">{label}</span>
+                          <span className={`pred-switch ${predForm[field] ? 'switch-on' : ''}`}>
+                            <span className="pred-switch-thumb" />
+                          </span>
+                          <input type="checkbox" checked={predForm[field]}
+                            onChange={e => handlePredFieldChange(field, e.target.checked)} />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {predError && <p className="pred-error">⚠️ {predError}</p>}
+                  <div className="pred-form-actions">
+                    <button type="submit" className="btn-pred-submit" disabled={predLoading}>
+                      {predLoading ? '⏳ Analyzing...' : '🔍 Predict Approval'}
+                    </button>
+                    <button type="button" className="btn-pred-reset" onClick={handlePredReset}>Reset</button>
+                  </div>
+                </form>
+              ) : (
+                /* ── Result Panel ── */
+                <div className="pred-result">
+                  <div className="pred-gauge-wrapper">
+                    <svg viewBox="0 0 120 120" className="pred-gauge">
+                      <circle cx="60" cy="60" r="50" fill="none" stroke="#e2e8f0" strokeWidth="10" />
+                      <circle cx="60" cy="60" r="50" fill="none"
+                        stroke={predResult.probability >= 70 ? '#22c55e' : predResult.probability >= 40 ? '#f59e0b' : '#ef4444'}
+                        strokeWidth="10"
+                        strokeDasharray={`${(predResult.probability / 100) * 314} 314`}
+                        strokeLinecap="round" transform="rotate(-90 60 60)"
+                        style={{ transition: 'stroke-dasharray 1s ease' }} />
+                      <text x="60" y="56" textAnchor="middle"
+                        style={{ fontSize: '22px', fontWeight: 700, fill: '#1e293b' }}>
+                        {predResult.probability}%
+                      </text>
+                      <text x="60" y="72" textAnchor="middle" style={{ fontSize: '9px', fill: '#64748b' }}>
+                        Approval chance
+                      </text>
+                    </svg>
+                  </div>
+                  <div className={`pred-verdict ${predResult.approved ? 'verdict-yes' : 'verdict-no'}`}>
+                    {predResult.approved ? '✅ Likely Approved' : '❌ May be Rejected'}
+                  </div>
+                  <div className="pred-confidence-row">
+                    <span className="pred-confidence-label">Confidence:</span>
+                    <span className={`pred-confidence-badge conf-${predResult.confidence?.toLowerCase().replace(/[^a-z]/g,'-')}`}>
+                      {predResult.confidence}
+                    </span>
+                  </div>
+                  <p className="pred-message">{predResult.message}</p>
+                  <div className="pred-tips">
+                    <p className="pred-tips-title">💡 Quick Tips to Improve Chances</p>
+                    <ul className="pred-tips-list">
+                      {!predForm.land_doc_uploaded      && <li>Upload your land ownership document</li>}
+                      {!predForm.bank_passbook_uploaded  && <li>Upload your bank passbook</li>}
+                      {!predForm.dbt_enabled             && <li>Enable DBT on your bank account</li>}
+                      {!predForm.mobile_linked_aadhaar   && <li>Link mobile number to Aadhaar</li>}
+                      {predForm.land_dispute_flag        && <li>Resolve any land disputes before applying</li>}
+                      {predForm.pm_kisan_rejected_flag   && <li>Address previous PM-KISAN rejection reason</li>}
+                    </ul>
+                  </div>
+                  <div className="pred-form-actions">
+                    <button className="btn-pred-submit" onClick={handlePredReset}>🔄 Try Again</button>
+                    <button className="btn-pred-reset" onClick={() => setShowPredictor(false)}>Close</button>
                   </div>
                 </div>
-
-                {/* ── Section 2: Land ── */}
-                <div className="pred-section">
-                  <h3 className="pred-section-title">🌾 Land Details</h3>
-                  <div className="pred-field-row">
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.land_registered}
-                        onChange={e => handlePredFieldChange('land_registered', e.target.checked)} />
-                      <span className="pred-toggle-label">Land registered in your name</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.land_record_verified}
-                        onChange={e => handlePredFieldChange('land_record_verified', e.target.checked)} />
-                      <span className="pred-toggle-label">Land records verified</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.land_dispute_flag}
-                        onChange={e => handlePredFieldChange('land_dispute_flag', e.target.checked)} />
-                      <span className="pred-toggle-label">Land under dispute</span>
-                    </label>
-                  </div>
-                  <div className="pred-input-group">
-                    <label className="pred-label">Land area (hectares)</label>
-                    <input type="number" step="0.01" min="0" placeholder="e.g. 1.5"
-                      value={predForm.land_area_hectare}
-                      onChange={e => handlePredFieldChange('land_area_hectare', e.target.value)}
-                      className="pred-input" />
-                  </div>
-                </div>
-
-                {/* ── Section 3: PM Kisan ── */}
-                <div className="pred-section">
-                  <h3 className="pred-section-title">🏛️ PM-KISAN Status</h3>
-                  <div className="pred-field-row">
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.pm_kisan_registered}
-                        onChange={e => handlePredFieldChange('pm_kisan_registered', e.target.checked)} />
-                      <span className="pred-toggle-label">Registered in PM-KISAN</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.pm_kisan_active}
-                        onChange={e => handlePredFieldChange('pm_kisan_active', e.target.checked)} />
-                      <span className="pred-toggle-label">PM-KISAN account active</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.pm_kisan_rejected_flag}
-                        onChange={e => handlePredFieldChange('pm_kisan_rejected_flag', e.target.checked)} />
-                      <span className="pred-toggle-label">Previously rejected in PM-KISAN</span>
-                    </label>
-                  </div>
-                  <div className="pred-input-group">
-                    <label className="pred-label">Installments received (0–20)</label>
-                    <input type="number" min="0" max="20" placeholder="e.g. 6"
-                      value={predForm.pm_kisan_installment_received}
-                      onChange={e => handlePredFieldChange('pm_kisan_installment_received', e.target.value)}
-                      className="pred-input" />
-                  </div>
-                </div>
-
-                {/* ── Section 4: Bank & DBT ── */}
-                <div className="pred-section">
-                  <h3 className="pred-section-title">🏦 Bank &amp; DBT</h3>
-                  <div className="pred-field-row">
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.bank_account_valid}
-                        onChange={e => handlePredFieldChange('bank_account_valid', e.target.checked)} />
-                      <span className="pred-toggle-label">Bank account valid &amp; active</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.ifsc_valid}
-                        onChange={e => handlePredFieldChange('ifsc_valid', e.target.checked)} />
-                      <span className="pred-toggle-label">IFSC code valid</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.dbt_enabled}
-                        onChange={e => handlePredFieldChange('dbt_enabled', e.target.checked)} />
-                      <span className="pred-toggle-label">DBT enabled on account</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.previous_dbt_failure}
-                        onChange={e => handlePredFieldChange('previous_dbt_failure', e.target.checked)} />
-                      <span className="pred-toggle-label">Previous DBT transfer failure</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* ── Section 5: Documents ── */}
-                <div className="pred-section">
-                  <h3 className="pred-section-title">📄 Documents Uploaded</h3>
-                  <div className="pred-field-row">
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.land_doc_uploaded}
-                        onChange={e => handlePredFieldChange('land_doc_uploaded', e.target.checked)} />
-                      <span className="pred-toggle-label">Land ownership document</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.bank_passbook_uploaded}
-                        onChange={e => handlePredFieldChange('bank_passbook_uploaded', e.target.checked)} />
-                      <span className="pred-toggle-label">Bank passbook / statement</span>
-                    </label>
-                    <label className="pred-toggle">
-                      <input type="checkbox" checked={predForm.pm_kisan_proof_uploaded}
-                        onChange={e => handlePredFieldChange('pm_kisan_proof_uploaded', e.target.checked)} />
-                      <span className="pred-toggle-label">PM-KISAN registration proof</span>
-                    </label>
-                  </div>
-                </div>
-
-                {predError && <p className="pred-error">⚠️ {predError}</p>}
-
-                <div className="pred-form-actions">
-                  <button type="submit" className="btn-pred-submit" disabled={predLoading}>
-                    {predLoading ? '⏳ Analyzing...' : '🔍 Predict Approval'}
-                  </button>
-                  <button type="button" className="btn-pred-reset" onClick={handlePredReset}>
-                    Reset
-                  </button>
-                </div>
-              </form>
-            ) : (
-              /* ── Result Panel ── */
-              <div className="pred-result">
-                {/* Gauge circle */}
-                <div className="pred-gauge-wrapper">
-                  <svg viewBox="0 0 120 120" className="pred-gauge">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="#e2e8f0" strokeWidth="10" />
-                    <circle
-                      cx="60" cy="60" r="50" fill="none"
-                      stroke={predResult.probability >= 70 ? '#22c55e' : predResult.probability >= 40 ? '#f59e0b' : '#ef4444'}
-                      strokeWidth="10"
-                      strokeDasharray={`${(predResult.probability / 100) * 314} 314`}
-                      strokeLinecap="round"
-                      transform="rotate(-90 60 60)"
-                      style={{ transition: 'stroke-dasharray 1s ease' }}
-                    />
-                    <text x="60" y="56" textAnchor="middle" className="gauge-pct-text"
-                      style={{ fontSize: '22px', fontWeight: 700, fill: '#1e293b' }}>
-                      {predResult.probability}%
-                    </text>
-                    <text x="60" y="72" textAnchor="middle"
-                      style={{ fontSize: '9px', fill: '#64748b' }}>
-                      Approval chance
-                    </text>
-                  </svg>
-                </div>
-
-                {/* Verdict badge */}
-                <div className={`pred-verdict ${predResult.approved ? 'verdict-yes' : 'verdict-no'}`}>
-                  {predResult.approved ? '✅ Likely Approved' : '❌ May be Rejected'}
-                </div>
-
-                {/* Confidence */}
-                <div className="pred-confidence-row">
-                  <span className="pred-confidence-label">Confidence:</span>
-                  <span className={`pred-confidence-badge conf-${predResult.confidence?.toLowerCase().replace(/[^a-z]/g,'-')}`}>
-                    {predResult.confidence}
-                  </span>
-                </div>
-
-                {/* Message */}
-                <p className="pred-message">{predResult.message}</p>
-
-                {/* Tips */}
-                <div className="pred-tips">
-                  <p className="pred-tips-title">💡 Quick Tips to Improve Chances</p>
-                  <ul className="pred-tips-list">
-                    {!predForm.land_doc_uploaded      && <li>Upload your land ownership document</li>}
-                    {!predForm.bank_passbook_uploaded  && <li>Upload your bank passbook</li>}
-                    {!predForm.dbt_enabled             && <li>Enable DBT on your bank account</li>}
-                    {!predForm.mobile_linked_aadhaar   && <li>Link mobile number to Aadhaar</li>}
-                    {predForm.land_dispute_flag        && <li>Resolve any land disputes before applying</li>}
-                    {predForm.pm_kisan_rejected_flag   && <li>Address previous PM-KISAN rejection reason</li>}
-                  </ul>
-                </div>
-
-                <div className="pred-form-actions">
-                  <button className="btn-pred-submit" onClick={handlePredReset}>
-                    🔄 Try Again
-                  </button>
-                  <button className="btn-pred-reset" onClick={() => setShowPredictor(false)}>
-                    Close
-                  </button>
-                </div>
-              </div>
+              )
             )}
+
+            {/* ══ TAB 2 — DOCUMENT ANALYSIS ══ */}
+            {activeTab === 'docs' && (
+              !docAnalysis ? (
+                <form onSubmit={handleDocSubmit} className="pred-form">
+                  <div className="doc-upload-intro">
+                    <div className="doc-upload-icon">🤖</div>
+                    <p>Upload any scheme-related document. Our AI will check <strong>validity, expiry dates, missing fields</strong> and advise if it's acceptable.</p>
+                  </div>
+
+                  {/* Document type */}
+                  <div className="pred-section">
+                    <div className="pred-section-header pred-sec-docs">📋 Select Document Type</div>
+                    <div className="doc-type-grid">
+                      {[
+                        ['aadhaar',       '🪪', 'Aadhaar Card'],
+                        ['land_record',   '🗺️', 'Land Record / Khasra'],
+                        ['bank_passbook', '📔', 'Bank Passbook'],
+                        ['pm_kisan',      '🌾', 'PM-KISAN Certificate'],
+                        ['domicile',      '🏠', 'Domicile Certificate'],
+                        ['income',        '💰', 'Income Certificate'],
+                      ].map(([val, icon, label]) => (
+                        <label key={val} className={`doc-type-card ${docType === val ? 'doc-type-active' : ''}`}>
+                          <input type="radio" name="docType" value={val}
+                            checked={docType === val}
+                            onChange={() => setDocType(val)} />
+                          <span className="doc-type-icon">{icon}</span>
+                          <span className="doc-type-label">{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* File upload */}
+                  <div className="pred-section">
+                    <div className="pred-section-header pred-sec-location">📁 Upload File</div>
+                    <label className={`doc-dropzone ${docFile ? 'doc-dropzone-filled' : ''}`}>
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={e => setDocFile(e.target.files[0] || null)} />
+                      {docFile ? (
+                        <div className="doc-file-info">
+                          <span className="doc-file-icon">📎</span>
+                          <span className="doc-file-name">{docFile.name}</span>
+                          <span className="doc-file-size">({(docFile.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                      ) : (
+                        <div className="doc-dropzone-placeholder">
+                          <span className="doc-drop-icon">⬆️</span>
+                          <span>Click to upload PDF, JPG or PNG</span>
+                          <span className="doc-drop-hint">Max 5 MB</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+
+                  {docError && <p className="pred-error">⚠️ {docError}</p>}
+                  <div className="pred-form-actions">
+                    <button type="submit" className="btn-pred-submit"
+                      disabled={docLoading || !docFile || !docType}>
+                      {docLoading ? '⏳ Analyzing...' : '🔍 Analyze Document'}
+                    </button>
+                    <button type="button" className="btn-pred-reset" onClick={handleDocReset}>Reset</button>
+                  </div>
+                </form>
+              ) : (
+                /* ── Doc Analysis Result ── */
+                <div className="pred-result doc-result">
+                  <div className="doc-result-header">
+                    <span className={`doc-result-badge ${docAnalysis.valid === false ? 'badge-invalid' : docAnalysis.valid ? 'badge-valid' : 'badge-warn'}`}>
+                      {docAnalysis.valid === false ? '❌ Issues Found' : docAnalysis.valid ? '✅ Valid Document' : '⚠️ Review Needed'}
+                    </span>
+                    <span className="doc-result-type">{docType.replace(/_/g, ' ').toUpperCase()}</span>
+                  </div>
+
+                  {docAnalysis.summary && (
+                    <div className="doc-analysis-box doc-summary">
+                      <p className="doc-box-title">📋 Summary</p>
+                      <p className="doc-box-text">{docAnalysis.summary}</p>
+                    </div>
+                  )}
+
+                  {docAnalysis.expiry && (
+                    <div className="doc-analysis-box doc-expiry">
+                      <p className="doc-box-title">📅 Expiry / Validity</p>
+                      <p className="doc-box-text">{docAnalysis.expiry}</p>
+                    </div>
+                  )}
+
+                  {docAnalysis.extracted_fields && Object.keys(docAnalysis.extracted_fields).length > 0 && (
+                    <div className="doc-analysis-box doc-fields">
+                      <p className="doc-box-title">🔍 Extracted Information</p>
+                      <table className="doc-fields-table">
+                        <tbody>
+                          {Object.entries(docAnalysis.extracted_fields).map(([k, v]) => (
+                            <tr key={k}>
+                              <td className="doc-field-key">{k}</td>
+                              <td className="doc-field-val">{String(v)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {docAnalysis.issues && docAnalysis.issues.length > 0 && (
+                    <div className="doc-analysis-box doc-issues">
+                      <p className="doc-box-title">⚠️ Issues</p>
+                      <ul className="pred-tips-list">
+                        {docAnalysis.issues.map((issue, i) => <li key={i}>{issue}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {docAnalysis.recommendation && (
+                    <div className="doc-analysis-box doc-rec">
+                      <p className="doc-box-title">💡 Recommendation</p>
+                      <p className="doc-box-text">{docAnalysis.recommendation}</p>
+                    </div>
+                  )}
+
+                  <div className="pred-form-actions">
+                    <button className="btn-pred-submit" onClick={handleDocReset}>🔄 Analyze Another</button>
+                    <button className="btn-pred-reset" onClick={() => setShowPredictor(false)}>Close</button>
+                  </div>
+                </div>
+              )
+            )}
+
           </div>
         </div>
       )}

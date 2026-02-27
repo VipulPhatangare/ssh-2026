@@ -12,7 +12,8 @@ const {
   updateScheme,
   deleteScheme,
   chatAboutScheme,
-  predictApproval
+  predictApproval,
+  analyzeDocuments
 } = require('../controllers/schemeController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -27,6 +28,7 @@ router.get('/unclaimed/me', protect, getUnclaimedSchemes);
 
 // Wildcard routes
 router.post('/:id/predict-approval', protect, predictApproval);
+router.post('/:id/analyze-document',  protect, analyzeDocuments);
 router.post('/:id/chat', chatAboutScheme);
 router.get('/:id/check-documents', protect, checkSchemeDocuments);
 router.get('/:id', getSchemeById);

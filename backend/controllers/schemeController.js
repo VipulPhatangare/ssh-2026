@@ -456,3 +456,48 @@ exports.predictApproval = async (req, res, next) => {
     next(error);
   }
 };
+
+/* ─────────────────────────────────────────────────────────────────────
+   analyzeDocuments  —  sends uploaded document to n8n / LLM
+   POST /api/schemes/:id/analyze-document   (protected)
+   Body: { documentType, fileName, fileBase64, mimeType }
+───────────────────────────────────────────────────────────────────── */
+exports.analyzeDocuments = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select('fullName');
+    if (!user) return res.status(401).json({ success: false, message: 'User not found' });
+
+    const { documentType, fileName, fileBase64, mimeType } = req.body;
+    if (!documentType || !fileBase64) {
+      return res.status(400).json({ success: false, message: 'documentType and fileBase64 are required' });
+    }
+
+    const WEBHOOK_URL = 'https://synthomind.cloud/webhook/doc-analysis';
+
+    const webhookResp = await fetch(WEBHOOK_URL, {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({
+        documentType,
+        fileName   : fileName || 'document',
+        fileBase64,
+        mimeType   : mimeType || 'application/octet-stream',
+        userName   : user.fullName,
+        schemeId   : req.params.id,
+      }),
+    });
+
+    if (!webhookResp.ok) {
+      return res.status(502).json({ success: false, message: 'Document analysis service unavailable. Please try again later.' });
+    }
+
+    const raw = await webhookResp.json();
+
+    // n8n may return an array (single-item) or an object
+    const data = Array.isArray(raw) ? raw[0] : raw;
+
+    return res.status(200).json({ success: true, analysis: data });
+  } catch (error) {
+    next(error);
+  }
+};
