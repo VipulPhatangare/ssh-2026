@@ -331,9 +331,21 @@ const GrievancePage = () => {
                 {(() => {
                   // Extract text from different response formats
                   let draftText = '';
-                  if (typeof analysisResult === 'string') {
+                  
+                  // Handle array response with cleanedLetter property
+                  if (Array.isArray(analysisResult) && analysisResult.length > 0) {
+                    draftText = analysisResult[0].cleanedLetter || analysisResult[0].draft || JSON.stringify(analysisResult[0], null, 2);
+                  }
+                  // Handle direct string
+                  else if (typeof analysisResult === 'string') {
                     draftText = analysisResult;
-                  } else if (analysisResult.draft) {
+                  }
+                  // Handle object with cleanedLetter
+                  else if (analysisResult.cleanedLetter) {
+                    draftText = analysisResult.cleanedLetter;
+                  }
+                  // Handle other formats
+                  else if (analysisResult.draft) {
                     draftText = analysisResult.draft;
                   } else if (analysisResult.choices?.[0]?.message?.content) {
                     draftText = analysisResult.choices[0].message.content;
@@ -343,7 +355,9 @@ const GrievancePage = () => {
                     draftText = JSON.stringify(analysisResult, null, 2);
                   }
 
-                  // Format the text properly with line breaks
+                  // Replace literal \n with actual line breaks and format
+                  draftText = draftText.replace(/\\n/g, '\n');
+                  
                   return draftText.split('\n').map((line, index) => (
                     <React.Fragment key={index}>
                       {line}
@@ -356,13 +370,28 @@ const GrievancePage = () => {
                 type="button"
                 className="grv-copy-btn"
                 onClick={() => {
-                  let text = analysisResult;
-                  if (typeof analysisResult !== 'string') {
-                    text = analysisResult.draft || 
-                           analysisResult.choices?.[0]?.message?.content || 
-                           analysisResult.message?.content ||
-                           JSON.stringify(analysisResult);
+                  // Extract text for copying
+                  let text = '';
+                  
+                  if (Array.isArray(analysisResult) && analysisResult.length > 0) {
+                    text = analysisResult[0].cleanedLetter || analysisResult[0].draft || JSON.stringify(analysisResult[0]);
+                  } else if (typeof analysisResult === 'string') {
+                    text = analysisResult;
+                  } else if (analysisResult.cleanedLetter) {
+                    text = analysisResult.cleanedLetter;
+                  } else if (analysisResult.draft) {
+                    text = analysisResult.draft;
+                  } else if (analysisResult.choices?.[0]?.message?.content) {
+                    text = analysisResult.choices[0].message.content;
+                  } else if (analysisResult.message?.content) {
+                    text = analysisResult.message.content;
+                  } else {
+                    text = JSON.stringify(analysisResult);
                   }
+                  
+                  // Replace literal \n with actual line breaks
+                  text = text.replace(/\\n/g, '\n');
+                  
                   navigator.clipboard.writeText(text);
                   setMessage({ type: 'success', text: 'Draft copied to clipboard!' });
                   setTimeout(() => setMessage({ type: '', text: '' }), 2000);
