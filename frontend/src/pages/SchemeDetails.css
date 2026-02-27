@@ -860,3 +860,275 @@
     font-size: 14px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PREDICTION FEATURE  (S0001 Kisan Kalyan)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Trigger button area below scheme-actions */
+.pred-trigger-wrapper {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px dashed #e2e8f0;
+  text-align: center;
+}
+
+.btn-predict {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-predict:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.55);
+}
+
+.pred-trigger-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ── Modal overlay ──────────────────────────────────────────────────────────── */
+.pred-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.pred-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.pred-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.pred-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px;
+}
+
+.pred-modal-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.pred-close-btn {
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  color: #475569;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.pred-close-btn:hover { background: #e2e8f0; }
+
+/* ── Form ───────────────────────────────────────────────────────────────────── */
+.pred-form {
+  padding: 20px 28px 28px;
+}
+
+.pred-section {
+  margin-bottom: 22px;
+}
+
+.pred-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px;
+}
+
+.pred-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pred-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.pred-toggle:hover { background: #f1f5f9; border-color: #c7d2fe; }
+.pred-toggle input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6366f1; cursor: pointer; }
+.pred-toggle-label { font-size: 13px; color: #374151; white-space: nowrap; }
+
+.pred-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 240px;
+}
+.pred-label { font-size: 13px; color: #374151; font-weight: 500; }
+.pred-input {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.pred-input:focus { border-color: #6366f1; }
+
+.pred-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.pred-form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.btn-pred-submit {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-pred-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-pred-submit:not(:disabled):hover { opacity: 0.9; }
+
+.btn-pred-reset {
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-pred-reset:hover { background: #e2e8f0; }
+
+/* ── Result panel ───────────────────────────────────────────────────────────── */
+.pred-result {
+  padding: 28px;
+  text-align: center;
+}
+
+.pred-gauge-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.pred-gauge {
+  width: 160px;
+  height: 160px;
+}
+
+.pred-verdict {
+  display: inline-block;
+  padding: 10px 28px;
+  border-radius: 100px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.verdict-yes { background: #dcfce7; color: #16a34a; }
+.verdict-no  { background: #fee2e2; color: #dc2626; }
+
+.pred-confidence-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.pred-confidence-label { font-size: 14px; color: #64748b; }
+.pred-confidence-badge {
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.conf-high          { background: #dcfce7; color: #16a34a; }
+.conf-medium-high   { background: #d1fae5; color: #059669; }
+.conf-medium        { background: #fef9c3; color: #ca8a04; }
+.conf-medium-low    { background: #ffedd5; color: #ea580c; }
+.conf-low           { background: #fee2e2; color: #dc2626; }
+
+.pred-message {
+  color: #374151;
+  font-size: 14px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* Tips */
+.pred-tips {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+.pred-tips-title { font-size: 14px; font-weight: 600; color: #475569; margin: 0 0 10px; }
+.pred-tips-list  { margin: 0; padding-left: 18px; }
+.pred-tips-list li { font-size: 13px; color: #374151; margin-bottom: 5px; line-height: 1.4; }
+

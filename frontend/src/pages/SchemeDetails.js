@@ -4,6 +4,28 @@ import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import './SchemeDetails.css';
 
+// ── Default prediction form values ───────────────────────────────────────────
+const PRED_FORM_DEFAULTS = {
+  rural_flag: false,
+  mobile_linked_aadhaar: false,
+  bank_linked_aadhaar: false,
+  land_registered: false,
+  land_area_hectare: '',
+  land_record_verified: false,
+  land_dispute_flag: false,
+  pm_kisan_registered: false,
+  pm_kisan_active: false,
+  pm_kisan_installment_received: 0,
+  pm_kisan_rejected_flag: false,
+  bank_account_valid: false,
+  ifsc_valid: false,
+  dbt_enabled: false,
+  previous_dbt_failure: false,
+  land_doc_uploaded: false,
+  bank_passbook_uploaded: false,
+  pm_kisan_proof_uploaded: false,
+};
+
 const SchemeDetails = () => {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -15,6 +37,13 @@ const SchemeDetails = () => {
   const [chatInput, setChatInput] = useState('');
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // ── Prediction states (S0001 only) ────────────────────────────────────────
+  const [showPredictor, setShowPredictor] = useState(false);
+  const [predForm, setPredForm]           = useState(PRED_FORM_DEFAULTS);
+  const [predResult, setPredResult]       = useState(null);
+  const [predLoading, setPredLoading]     = useState(false);
+  const [predError, setPredError]         = useState(null);
 
   useEffect(() => {
     fetchSchemeDetails();
@@ -47,6 +76,43 @@ const SchemeDetails = () => {
 
   const handleBack = () => {
     navigate('/schemes');
+  };
+
+  // ── Prediction handlers ───────────────────────────────────────────────────
+  const handlePredFieldChange = (field, value) => {
+    setPredForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePredSubmit = async (e) => {
+    e.preventDefault();
+    setPredLoading(true);
+    setPredResult(null);
+    setPredError(null);
+    try {
+      const res = await api.post('/schemes/S0001/predict-approval', {
+        ...predForm,
+        land_area_hectare: parseFloat(predForm.land_area_hectare) || 0,
+        pm_kisan_installment_received: parseInt(predForm.pm_kisan_installment_received) || 0,
+      });
+      if (res.data.success) {
+        setPredResult(res.data.prediction);
+      } else {
+        setPredError(res.data.message || 'Prediction failed');
+      }
+    } catch (err) {
+      setPredError(
+        err.response?.data?.message ||
+        'Prediction service is unavailable. Make sure the ML server is running.'
+      );
+    } finally {
+      setPredLoading(false);
+    }
+  };
+
+  const handlePredReset = () => {
+    setPredForm(PRED_FORM_DEFAULTS);
+    setPredResult(null);
+    setPredError(null);
   };
 
   const handleSendMessage = async (e) => {
@@ -230,6 +296,21 @@ const SchemeDetails = () => {
                 {t('backToSchemes')}
               </button>
             </div>
+
+            {/* ── Prediction button — S0001 only ──────────────────────────── */}
+            {scheme.schemeId === 'S0001' && (
+              <div className="pred-trigger-wrapper">
+                <button
+                  className="btn-predict"
+                  onClick={() => { setShowPredictor(true); handlePredReset(); }}
+                >
+                  🤖 Check Approval Chances
+                </button>
+                <p className="pred-trigger-hint">
+                  AI-powered prediction based on your profile &amp; land/bank details
+                </p>
+              </div>
+            )}
           </div>
 
           {/* RIGHT SECTION - CHAT INTERFACE (30%) */}
@@ -297,6 +378,233 @@ const SchemeDetails = () => {
           </div>
         </div>
       </div>
+    </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          PREDICTION MODAL  (S0001 only)
+         ══════════════════════════════════════════════════════════════════════ */}
+      {showPredictor && (
+        <div className="pred-overlay" onClick={() => setShowPredictor(false)}>
+          <div className="pred-modal" onClick={e => e.stopPropagation()}>
+            <div className="pred-modal-header">
+              <div>
+                <h2 className="pred-modal-title">🤖 Approval Prediction</h2>
+                <p className="pred-modal-subtitle">Kisan Kalyan Yojana (S0001) — Fill details below</p>
+              </div>
+              <button className="pred-close-btn" onClick={() => setShowPredictor(false)}>✕</button>
+            </div>
+
+            {!predResult ? (
+              <form onSubmit={handlePredSubmit} className="pred-form">
+                {/* ── Section 1: Location ── */}
+                <div className="pred-section">
+                  <h3 className="pred-section-title">📍 Location</h3>
+                  <div className="pred-field-row">
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.rural_flag}
+                        onChange={e => handlePredFieldChange('rural_flag', e.target.checked)} />
+                      <span className="pred-toggle-label">Rural area resident</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.mobile_linked_aadhaar}
+                        onChange={e => handlePredFieldChange('mobile_linked_aadhaar', e.target.checked)} />
+                      <span className="pred-toggle-label">Mobile linked to Aadhaar</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.bank_linked_aadhaar}
+                        onChange={e => handlePredFieldChange('bank_linked_aadhaar', e.target.checked)} />
+                      <span className="pred-toggle-label">Bank account linked to Aadhaar</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* ── Section 2: Land ── */}
+                <div className="pred-section">
+                  <h3 className="pred-section-title">🌾 Land Details</h3>
+                  <div className="pred-field-row">
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.land_registered}
+                        onChange={e => handlePredFieldChange('land_registered', e.target.checked)} />
+                      <span className="pred-toggle-label">Land registered in your name</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.land_record_verified}
+                        onChange={e => handlePredFieldChange('land_record_verified', e.target.checked)} />
+                      <span className="pred-toggle-label">Land records verified</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.land_dispute_flag}
+                        onChange={e => handlePredFieldChange('land_dispute_flag', e.target.checked)} />
+                      <span className="pred-toggle-label">Land under dispute</span>
+                    </label>
+                  </div>
+                  <div className="pred-input-group">
+                    <label className="pred-label">Land area (hectares)</label>
+                    <input type="number" step="0.01" min="0" placeholder="e.g. 1.5"
+                      value={predForm.land_area_hectare}
+                      onChange={e => handlePredFieldChange('land_area_hectare', e.target.value)}
+                      className="pred-input" />
+                  </div>
+                </div>
+
+                {/* ── Section 3: PM Kisan ── */}
+                <div className="pred-section">
+                  <h3 className="pred-section-title">🏛️ PM-KISAN Status</h3>
+                  <div className="pred-field-row">
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.pm_kisan_registered}
+                        onChange={e => handlePredFieldChange('pm_kisan_registered', e.target.checked)} />
+                      <span className="pred-toggle-label">Registered in PM-KISAN</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.pm_kisan_active}
+                        onChange={e => handlePredFieldChange('pm_kisan_active', e.target.checked)} />
+                      <span className="pred-toggle-label">PM-KISAN account active</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.pm_kisan_rejected_flag}
+                        onChange={e => handlePredFieldChange('pm_kisan_rejected_flag', e.target.checked)} />
+                      <span className="pred-toggle-label">Previously rejected in PM-KISAN</span>
+                    </label>
+                  </div>
+                  <div className="pred-input-group">
+                    <label className="pred-label">Installments received (0–20)</label>
+                    <input type="number" min="0" max="20" placeholder="e.g. 6"
+                      value={predForm.pm_kisan_installment_received}
+                      onChange={e => handlePredFieldChange('pm_kisan_installment_received', e.target.value)}
+                      className="pred-input" />
+                  </div>
+                </div>
+
+                {/* ── Section 4: Bank & DBT ── */}
+                <div className="pred-section">
+                  <h3 className="pred-section-title">🏦 Bank &amp; DBT</h3>
+                  <div className="pred-field-row">
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.bank_account_valid}
+                        onChange={e => handlePredFieldChange('bank_account_valid', e.target.checked)} />
+                      <span className="pred-toggle-label">Bank account valid &amp; active</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.ifsc_valid}
+                        onChange={e => handlePredFieldChange('ifsc_valid', e.target.checked)} />
+                      <span className="pred-toggle-label">IFSC code valid</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.dbt_enabled}
+                        onChange={e => handlePredFieldChange('dbt_enabled', e.target.checked)} />
+                      <span className="pred-toggle-label">DBT enabled on account</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.previous_dbt_failure}
+                        onChange={e => handlePredFieldChange('previous_dbt_failure', e.target.checked)} />
+                      <span className="pred-toggle-label">Previous DBT transfer failure</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* ── Section 5: Documents ── */}
+                <div className="pred-section">
+                  <h3 className="pred-section-title">📄 Documents Uploaded</h3>
+                  <div className="pred-field-row">
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.land_doc_uploaded}
+                        onChange={e => handlePredFieldChange('land_doc_uploaded', e.target.checked)} />
+                      <span className="pred-toggle-label">Land ownership document</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.bank_passbook_uploaded}
+                        onChange={e => handlePredFieldChange('bank_passbook_uploaded', e.target.checked)} />
+                      <span className="pred-toggle-label">Bank passbook / statement</span>
+                    </label>
+                    <label className="pred-toggle">
+                      <input type="checkbox" checked={predForm.pm_kisan_proof_uploaded}
+                        onChange={e => handlePredFieldChange('pm_kisan_proof_uploaded', e.target.checked)} />
+                      <span className="pred-toggle-label">PM-KISAN registration proof</span>
+                    </label>
+                  </div>
+                </div>
+
+                {predError && <p className="pred-error">⚠️ {predError}</p>}
+
+                <div className="pred-form-actions">
+                  <button type="submit" className="btn-pred-submit" disabled={predLoading}>
+                    {predLoading ? '⏳ Analyzing...' : '🔍 Predict Approval'}
+                  </button>
+                  <button type="button" className="btn-pred-reset" onClick={handlePredReset}>
+                    Reset
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* ── Result Panel ── */
+              <div className="pred-result">
+                {/* Gauge circle */}
+                <div className="pred-gauge-wrapper">
+                  <svg viewBox="0 0 120 120" className="pred-gauge">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#e2e8f0" strokeWidth="10" />
+                    <circle
+                      cx="60" cy="60" r="50" fill="none"
+                      stroke={predResult.probability >= 70 ? '#22c55e' : predResult.probability >= 40 ? '#f59e0b' : '#ef4444'}
+                      strokeWidth="10"
+                      strokeDasharray={`${(predResult.probability / 100) * 314} 314`}
+                      strokeLinecap="round"
+                      transform="rotate(-90 60 60)"
+                      style={{ transition: 'stroke-dasharray 1s ease' }}
+                    />
+                    <text x="60" y="56" textAnchor="middle" className="gauge-pct-text"
+                      style={{ fontSize: '22px', fontWeight: 700, fill: '#1e293b' }}>
+                      {predResult.probability}%
+                    </text>
+                    <text x="60" y="72" textAnchor="middle"
+                      style={{ fontSize: '9px', fill: '#64748b' }}>
+                      Approval chance
+                    </text>
+                  </svg>
+                </div>
+
+                {/* Verdict badge */}
+                <div className={`pred-verdict ${predResult.approved ? 'verdict-yes' : 'verdict-no'}`}>
+                  {predResult.approved ? '✅ Likely Approved' : '❌ May be Rejected'}
+                </div>
+
+                {/* Confidence */}
+                <div className="pred-confidence-row">
+                  <span className="pred-confidence-label">Confidence:</span>
+                  <span className={`pred-confidence-badge conf-${predResult.confidence?.toLowerCase().replace(/[^a-z]/g,'-')}`}>
+                    {predResult.confidence}
+                  </span>
+                </div>
+
+                {/* Message */}
+                <p className="pred-message">{predResult.message}</p>
+
+                {/* Tips */}
+                <div className="pred-tips">
+                  <p className="pred-tips-title">💡 Quick Tips to Improve Chances</p>
+                  <ul className="pred-tips-list">
+                    {!predForm.land_doc_uploaded      && <li>Upload your land ownership document</li>}
+                    {!predForm.bank_passbook_uploaded  && <li>Upload your bank passbook</li>}
+                    {!predForm.dbt_enabled             && <li>Enable DBT on your bank account</li>}
+                    {!predForm.mobile_linked_aadhaar   && <li>Link mobile number to Aadhaar</li>}
+                    {predForm.land_dispute_flag        && <li>Resolve any land disputes before applying</li>}
+                    {predForm.pm_kisan_rejected_flag   && <li>Address previous PM-KISAN rejection reason</li>}
+                  </ul>
+                </div>
+
+                <div className="pred-form-actions">
+                  <button className="btn-pred-submit" onClick={handlePredReset}>
+                    🔄 Try Again
+                  </button>
+                  <button className="btn-pred-reset" onClick={() => setShowPredictor(false)}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
