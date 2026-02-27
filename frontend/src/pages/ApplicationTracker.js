@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import './ApplicationTracker.css';
 
 const ApplicationTracker = () => {
+  const { t } = useTranslation();
   const [applications, setApplications] = useState([]);
   const [selectedApp, setSelectedApp] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,18 +34,29 @@ const ApplicationTracker = () => {
     }
   };
 
+  // Translate status values from English DB values to current language
+  const translateStatus = (status) => {
+    const map = {
+      'Approved': t('statusApproved'),
+      'Rejected': t('statusRejected'),
+      'Pending': t('statusPending'),
+      'Under Review': t('statusUnderReview')
+    };
+    return map[status] || status;
+  };
+
   if (loading) {
-    return <div className="loading">Loading applications...</div>;
+    return <div className="loading">{t('loadingApplications')}</div>;
   }
 
   return (
     <div className="application-tracker">
       <div className="container">
-        <h1>My Applications</h1>
+        <h1>{t('myApplications')}</h1>
 
         {applications.length === 0 ? (
           <div className="alert alert-info">
-            You haven't submitted any applications yet.
+            {t('noApplications')}
           </div>
         ) : (
           <div className="applications-layout">
@@ -55,12 +68,12 @@ const ApplicationTracker = () => {
                   onClick={() => setSelectedApp(app)}
                 >
                   <h3>{app.schemeId?.name}</h3>
-                  <p className="app-number">Application No: {app.applicationNumber}</p>
+                  <p className="app-number">{t('applicationNo')}: {app.applicationNumber}</p>
                   <span className={`badge badge-${getStatusColor(app.status)}`}>
-                    {app.status}
+                    {translateStatus(app.status)}
                   </span>
                   <p className="app-date">
-                    Submitted: {new Date(app.submissionDate).toLocaleDateString()}
+                    {t('submitted')}: {new Date(app.submissionDate).toLocaleDateString()}
                   </p>
                 </div>
               ))}
@@ -68,27 +81,27 @@ const ApplicationTracker = () => {
 
             {selectedApp && (
               <div className="card application-details">
-                <h2>Application Details</h2>
+                <h2>{t('applicationDetails')}</h2>
                 
                 <div className="detail-section">
-                  <h3>Scheme Information</h3>
-                  <p><strong>Scheme Name:</strong> {selectedApp.schemeId?.name}</p>
-                  <p><strong>Department:</strong> {selectedApp.schemeId?.department}</p>
-                  <p><strong>Application Number:</strong> {selectedApp.applicationNumber}</p>
+                  <h3>{t('schemeInformation')}</h3>
+                  <p><strong>{t('schemeName')}:</strong> {selectedApp.schemeId?.name}</p>
+                  <p><strong>{t('department')}:</strong> {selectedApp.schemeId?.department}</p>
+                  <p><strong>{t('applicationNumber')}:</strong> {selectedApp.applicationNumber}</p>
                 </div>
 
                 <div className="detail-section">
-                  <h3>Status</h3>
+                  <h3>{t('status')}</h3>
                   <span className={`badge badge-${getStatusColor(selectedApp.status)} badge-lg`}>
-                    {selectedApp.status}
+                    {translateStatus(selectedApp.status)}
                   </span>
                   {selectedApp.remarks && (
-                    <p className="remarks"><strong>Remarks:</strong> {selectedApp.remarks}</p>
+                    <p className="remarks"><strong>{t('remarks')}:</strong> {selectedApp.remarks}</p>
                   )}
                 </div>
 
                 <div className="detail-section">
-                  <h3>Timeline</h3>
+                  <h3>{t('timeline')}</h3>
                   <div className="timeline">
                     {selectedApp.timeline.map((item, index) => (
                       <div key={index} className="timeline-item">
