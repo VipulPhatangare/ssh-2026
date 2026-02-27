@@ -91,8 +91,14 @@ module.exports = function translationMiddleware(req, res, next) {
     if (res.noTranslate) return originalJson(data);
 
     try {
+      // Normalize to a plain JS object: Mongoose documents (and any other
+      // class instances) use internal getters that Object.entries() cannot
+      // walk. JSON round-trip triggers Mongoose's toJSON() on every nested
+      // document, producing a pure enumerable object the translator can walk.
+      const plain = JSON.parse(JSON.stringify(data));
+
       const translated = await _translateSelectedFields(
-        data,
+        plain,
         res.translateFields,   // undefined → translate everything
         lang
       );

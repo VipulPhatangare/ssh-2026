@@ -19,13 +19,14 @@ export const AuthProvider = ({ children }) => {
   const [eligibleSchemes, setEligibleSchemes] = useState([]);
   const [eligibleLoading, setEligibleLoading] = useState(false);
 
-  // Fire webhook once per calendar day per user; cache result in localStorage
+  // Fire webhook once per calendar day per user+language; cache result in localStorage
   const fetchEligibleSchemesForUser = async (userId) => {
     if (!userId) return;
-    const dateKey    = `eligible_date_${CACHE_VERSION}_${userId}`;
-    const cacheKey   = `eligible_schemes_${CACHE_VERSION}_${userId}`;
+    const lang       = localStorage.getItem('language') || 'en';
+    const dateKey    = `eligible_date_${CACHE_VERSION}_${userId}_${lang}`;
+    const cacheKey   = `eligible_schemes_${CACHE_VERSION}_${userId}_${lang}`;
     const today      = todayStr();
-    const storedDate  = localStorage.getItem(dateKey);
+    const storedDate    = localStorage.getItem(dateKey);
     const storedSchemes = localStorage.getItem(cacheKey);
 
     if (storedDate === today && storedSchemes) {
@@ -41,11 +42,21 @@ export const AuthProvider = ({ children }) => {
         { headers: { 'Content-Type': 'application/json' } }
       );
       const raw = Array.isArray(res.data) ? res.data[0] : res.data;
-      const schemes = raw?.recommended_schemes || [];
+      let schemes = raw?.recommended_schemes || [];
+
+      // Translate scheme_name / description if UI language is not English.
+      // The webhook always returns English; we use our own translation endpoint.
+      if (lang !== 'en' && schemes.length) {
+        try {
+          const transRes = await api.post('/translation/translate', { data: schemes, lng: lang });
+          if (transRes.data?.data) schemes = transRes.data.data;
+        } catch (_) { /* keep English on translation failure */ }
+      }
+
       setEligibleSchemes(schemes);
       localStorage.setItem(dateKey,  today);
       localStorage.setItem(cacheKey, JSON.stringify(schemes));
-      console.log(`✅ Eligible schemes fetched (${schemes.length}) for user ${userId}`);
+      console.log(`✅ Eligible schemes fetched (${schemes.length}) for user ${userId} [${lang}]`);
     } catch (err) {
       console.warn('⚠️  eligible-for-me webhook failed:', err.message);
     } finally {
@@ -53,12 +64,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Force re-fetch regardless of today's cache
+  // Force re-fetch regardless of today's cache (language-aware)
   const refreshEligibleSchemes = async () => {
     const userId = user?._id;
     if (!userId) return;
-    const dateKey  = `eligible_date_${CACHE_VERSION}_${userId}`;
-    const cacheKey = `eligible_schemes_${CACHE_VERSION}_${userId}`;
+    const lang     = localStorage.getItem('language') || 'en';
+    const dateKey  = `eligible_date_${CACHE_VERSION}_${userId}_${lang}`;
+    const cacheKey = `eligible_schemes_${CACHE_VERSION}_${userId}_${lang}`;
     localStorage.removeItem(dateKey);
     localStorage.removeItem(cacheKey);
     setEligibleSchemes([]);
@@ -70,11 +82,19 @@ export const AuthProvider = ({ children }) => {
         { headers: { 'Content-Type': 'application/json' } }
       );
       const raw = Array.isArray(res.data) ? res.data[0] : res.data;
-      const schemes = raw?.recommended_schemes || [];
+      let schemes = raw?.recommended_schemes || [];
+
+      if (lang !== 'en' && schemes.length) {
+        try {
+          const transRes = await api.post('/translation/translate', { data: schemes, lng: lang });
+          if (transRes.data?.data) schemes = transRes.data.data;
+        } catch (_) {}
+      }
+
       setEligibleSchemes(schemes);
       localStorage.setItem(dateKey,  todayStr());
       localStorage.setItem(cacheKey, JSON.stringify(schemes));
-      console.log(`🔄 Eligible schemes refreshed (${schemes.length}) for user ${userId}`);
+      console.log(`🔄 Eligible schemes refreshed (${schemes.length}) for user ${userId} [${lang}]`);
     } catch (err) {
       console.warn('⚠️  eligible-for-me refresh failed:', err.message);
     } finally {
@@ -186,6 +206,7 @@ export const AuthProvider = ({ children }) => {
         eligibleSchemes,
         eligibleLoading,
         refreshEligibleSchemes,
+        ensureEligibleSchemes: fetchEligibleSchemesForUser,
       }}
     >
       {children}

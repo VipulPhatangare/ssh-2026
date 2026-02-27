@@ -229,7 +229,8 @@ async function translateBatch(texts, langCode) {
       translated = await provider(batches[b], apiCode);
     } catch (err) {
       // Graceful degradation: return originals if API fails
-      console.error(`[TranslationService] Provider error (${PROVIDER}):`, err.message);
+      const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+      console.error(`[TranslationService] Provider error (${PROVIDER}): ${detail}`);
       translated = batches[b];
     }
 

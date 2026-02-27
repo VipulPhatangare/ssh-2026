@@ -1,6 +1,9 @@
-const express = require('express');
+// Load env vars FIRST — before any other require reads process.env constants
+const path   = require('path');
 const dotenv = require('dotenv');
-const path = require('path');
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -11,9 +14,6 @@ const errorHandler = require('./middleware/errorHandler');
 const { initGridFS } = require('./config/gridfs');
 const translationMiddleware = require('./middleware/translationMiddleware');
 const translationCache = require('./services/translationCache');
-
-// Load env vars from root directory
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Connect to database
 connectDB();
@@ -110,6 +110,26 @@ app.get('/api/translation/cache-stats', (req, res) => {
 app.post('/api/translation/cache-flush', (req, res) => {
   translationCache.flush();
   res.json({ success: true, message: 'Translation cache flushed.' });
+});
+
+// Translate arbitrary JSON — used by the frontend to translate data that comes
+// from third-party webhooks (e.g. n8n eligible-for-me) and therefore never
+// passes through the backend translation middleware.
+app.post('/api/translation/translate', async (req, res) => {
+  res.noTranslate = true;
+  const { data, lng } = req.body;
+  if (!data || !lng || lng === 'en') {
+    return res.json({ success: true, data: data ?? null });
+  }
+  try {
+    const { translateJson } = require('./utils/jsonTranslator');
+    const plain      = JSON.parse(JSON.stringify(data)); // normalise
+    const translated = await translateJson(plain, lng);
+    res.json({ success: true, data: translated });
+  } catch (err) {
+    console.error('[/api/translation/translate]', err.message);
+    res.json({ success: true, data }); // graceful fallback
+  }
 });
 
 // Error handler middleware
