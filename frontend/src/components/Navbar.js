@@ -34,11 +34,13 @@ const Navbar = () => {
               <>
                 <Link to="/dashboard" className="nav-link">{t('dashboard')}</Link>
                 <Link to="/schemes" className="nav-link">{t('schemes')}</Link>
-                <Link to="/applications" className="nav-link">{t('applications')}</Link>
                 <Link to="/grievances" className="nav-link">{t('grievances')}</Link>
                 <Link to="/assistant" className="nav-link ai-nav-link">
                   🤖 AI Assistant
                   <span className="ai-new-badge">NEW</span>
+                </Link>
+                <Link to="/schemes/S0002" className="nav-link predict-nav-link">
+                  🌾 Predict Approval
                 </Link>
                 {user.role === 'Admin' && (
                   <Link to="/admin" className="nav-link">{t('admin')}</Link>

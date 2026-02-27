@@ -31,14 +31,6 @@ const formatSessionTime = (iso) => {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
 
-// ─── Quick action pills ───────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { icon: '📋', text: 'File Complaint',     hi: 'शिकायत दर्ज करें' },
-  { icon: '📄', text: 'Apply Certificate',  hi: 'प्रमाणपत्र के लिए आवेदन करें' },
-  { icon: '💰', text: 'Pay Tax Online',     hi: 'ऑनलाइन टैक्स भरें' },
-  { icon: '🏥', text: 'Health Services',    hi: 'स्वास्थ्य सेवाएं' },
-];
-
 // ─── Keyword → AI response map ───────────────────────────────────────────────
 const AI_RESPONSES = {
   pothole : '🚧 Road complaint registered! Ticket #RD-8821 has been created. The PWD team will inspect within 72 hours. You can track via the Applications section.',
@@ -843,18 +835,7 @@ const AIAssistantPage = () => {
                 <div className="ai-welcome-icon">🏛️</div>
                 <h1 className="ai-welcome-title">{L.welcome}</h1>
                 <p className="ai-welcome-subtitle">{L.subtitle}</p>
-                <div className="ai-quick-actions">
-                  {QUICK_ACTIONS.map((a, i) => (
-                    <button
-                      key={i}
-                      className="ai-quick-pill"
-                      onClick={() => sendMessage(isHindi ? a.hi : a.text)}
-                    >
-                      <span>{a.icon}</span>
-                      <span>{isHindi ? a.hi : a.text}</span>
-                    </button>
-                  ))}
-                </div>
+
               </div>
             ) : (
               /* ── Message bubbles ── */

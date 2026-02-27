@@ -14,31 +14,23 @@ const scoreColor = (score) => {
 
 const SchemeExplorer = () => {
   const { t } = useTranslation();
-  const { eligibleSchemes } = useContext(AuthContext);
+  const { eligibleSchemes, eligibleLoading, refreshEligibleSchemes } = useContext(AuthContext);
   const [schemes, setSchemes] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('eligible');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSchemes();
+    // 'eligible' tab uses n8n context data — no backend fetch needed
+    if (filter !== 'eligible') fetchSchemes();
   }, [filter]);
 
   const fetchSchemes = async () => {
     try {
-      let response;
-      if (filter === 'eligible') {
-        response = await api.get('/schemes/eligible/me');
-        setSchemes(response.data.eligible.map(item => item.scheme));
-      } else if (filter === 'unclaimed') {
-        response = await api.get('/schemes/unclaimed/me');
-        setSchemes(response.data.data.map(item => item.scheme));
-      } else {
-        response = await api.get('/schemes');
-        setSchemes(response.data.data);
-      }
+      const response = await api.get('/schemes');
+      setSchemes(response.data.data);
     } catch (error) {
       console.error('Error fetching schemes:', error);
     } finally {
@@ -85,7 +77,7 @@ const SchemeExplorer = () => {
     setSelectedDepartment(e.target.value);
   };
 
-  if (loading) {
+  if (loading && filter !== 'eligible') {
     return <div className="loading">{t('loading')}</div>;
   }
 
@@ -94,47 +86,7 @@ const SchemeExplorer = () => {
       <div className="container">
         <h1>{t('governmentSchemes')}</h1>
 
-        {/* ── AI-recommended "Eligible for You" section ── */}
-        {eligibleSchemes.length > 0 && (
-          <div className="eligible-section">
-            <div className="eligible-section-header">
-              <span className="eligible-star">✨</span>
-              <h2 className="eligible-title">Eligible for You</h2>
-              <span className="eligible-subtitle">AI-matched based on your profile</span>
-            </div>
-
-            <div className="eligible-cards-grid">
-              {eligibleSchemes.map((scheme, idx) => (
-                <div key={scheme.schemeId || idx} className="eligible-card">
-                  <div className="eligible-card-top">
-                    <h3 className="eligible-card-name">{scheme.scheme_name}</h3>
-                    <span
-                      className="eligible-match-badge"
-                      style={{ background: scoreColor(scheme.match_score) }}
-                    >
-                      {scheme.match_score}% Match
-                    </span>
-                  </div>
-                  <p className="eligible-card-desc">{scheme.description}</p>
-                  <button
-                    className="btn btn-primary eligible-view-btn"
-                    onClick={() => navigate(`/schemes/${scheme.schemeId}`)}
-                  >
-                    View More →
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="filter-buttons">
-          <button 
-            className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setFilter('all')}
-          >
-            {t('allSchemes')}
-          </button>
           <button 
             className={`btn ${filter === 'eligible' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilter('eligible')}
@@ -142,10 +94,10 @@ const SchemeExplorer = () => {
             {t('eligibleForMe')}
           </button>
           <button 
-            className={`btn ${filter === 'unclaimed' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setFilter('unclaimed')}
+            className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFilter('all')}
           >
-            {t('unclaimedBenefits')}
+            {t('allSchemes')}
           </button>
         </div>
 
@@ -175,7 +127,49 @@ const SchemeExplorer = () => {
         </div>
 
         <div className="schemes-list">
-          {filteredSchemes.length === 0 ? (
+          {filter === 'eligible' ? (
+            // ── Eligible tab: render n8n AI-recommended schemes ──
+            eligibleLoading ? (
+              <div className="eligible-loading" style={{ padding: '40px 0' }}>
+                <div className="eligible-spinner" />
+                <p>Finding best schemes for your profile…</p>
+              </div>
+            ) : eligibleSchemes.length === 0 ? (
+              <div className="no-schemes">
+                <p>No AI recommendations yet.</p>
+                <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={refreshEligibleSchemes}>
+                  🔄 Get My Eligible Schemes
+                </button>
+              </div>
+            ) : (
+              eligibleSchemes.map((scheme, idx) => (
+                <div key={scheme.schemeId || idx} className="scheme-card">
+                  <div className="scheme-header">
+                    <div className="scheme-info">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <h3 className="scheme-name" style={{ margin: 0 }}>{scheme.scheme_name}</h3>
+                        {scheme.match_score != null && (
+                          <span
+                            className="eligible-match-badge"
+                            style={{ backgroundColor: scoreColor(scheme.match_score), flexShrink: 0 }}
+                          >
+                            {scheme.match_score}% Match
+                          </span>
+                        )}
+                      </div>
+                      <p className="scheme-description">{scheme.description}</p>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/schemes/${scheme.schemeId}`)}
+                      className="btn btn-primary view-more-btn"
+                    >
+                      {t('viewMore')}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )
+          ) : filteredSchemes.length === 0 ? (
             <p className="no-schemes">
               {schemes.length === 0
                 ? t('noSchemes')

@@ -11,7 +11,9 @@ const {
   createScheme,
   updateScheme,
   deleteScheme,
-  chatAboutScheme
+  chatAboutScheme,
+  predictApproval,
+  analyzeDocuments
 } = require('../controllers/schemeController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -19,13 +21,17 @@ const { protect, authorize } = require('../middleware/auth');
 router.get('/', getAllSchemes);
 router.get('/resolve/:schemeId', resolveSchemeId);
 router.get('/life-event/:event', getSchemesByLifeEvent);
-router.post('/:id/chat', chatAboutScheme);
-router.get('/:id', getSchemeById);
 
-// Protected routes
+// Protected named routes — must come BEFORE /:id wildcard
 router.get('/eligible/me', protect, getEligibleSchemes);
 router.get('/unclaimed/me', protect, getUnclaimedSchemes);
+
+// Wildcard routes
+router.post('/:id/predict-approval', protect, predictApproval);
+router.post('/:id/analyze-document',  protect, analyzeDocuments);
+router.post('/:id/chat', chatAboutScheme);
 router.get('/:id/check-documents', protect, checkSchemeDocuments);
+router.get('/:id', getSchemeById);
 
 // Admin routes
 router.post('/', protect, authorize('Admin'), createScheme);

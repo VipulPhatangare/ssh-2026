@@ -12,7 +12,6 @@ import AIAssistantPage from './pages/AIAssistantPage';
 import Profile from './pages/Profile';
 import SchemeExplorer from './pages/SchemeExplorer';
 import SchemeDetails from './pages/SchemeDetails';
-import ApplicationTracker from './pages/ApplicationTracker';
 import GrievancePage from './pages/GrievancePage';
 import AdminPanel from './pages/AdminPanel';
 
@@ -75,14 +74,6 @@ function AppContent() {
               element={
                 <PrivateRoute>
                   <SchemeDetails />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/applications" 
-              element={
-                <PrivateRoute>
-                  <ApplicationTracker />
                 </PrivateRoute>
               } 
             />

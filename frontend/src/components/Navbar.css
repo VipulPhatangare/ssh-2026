@@ -101,6 +101,18 @@
   50% { opacity: 0.65; }
 }
 
+/* Kisan Approval Predict Nav Link */
+.predict-nav-link {
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  border-radius: 8px !important;
+}
+
+.predict-nav-link:hover {
+  background: rgba(34, 197, 94, 0.32) !important;
+  border-color: rgba(34, 197, 94, 0.75);
+}
+
 /* Navbar-scoped button overrides */
 .navbar .btn-primary {
   background: linear-gradient(135deg, #4f46e5, #0ea5e9);
