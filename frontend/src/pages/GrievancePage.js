@@ -329,21 +329,27 @@ const GrievancePage = () => {
             <div className="grv-draft-section">
               <div className="grv-draft-content">
                 {(() => {
-                  // Handle different response formats from webhook
+                  // Extract text from different response formats
+                  let draftText = '';
                   if (typeof analysisResult === 'string') {
-                    return analysisResult;
+                    draftText = analysisResult;
+                  } else if (analysisResult.draft) {
+                    draftText = analysisResult.draft;
+                  } else if (analysisResult.choices?.[0]?.message?.content) {
+                    draftText = analysisResult.choices[0].message.content;
+                  } else if (analysisResult.message?.content) {
+                    draftText = analysisResult.message.content;
+                  } else {
+                    draftText = JSON.stringify(analysisResult, null, 2);
                   }
-                  if (analysisResult.draft) {
-                    return analysisResult.draft;
-                  }
-                  if (analysisResult.choices?.[0]?.message?.content) {
-                    return analysisResult.choices[0].message.content;
-                  }
-                  if (analysisResult.message?.content) {
-                    return analysisResult.message.content;
-                  }
-                  // Try to extract text from any structure
-                  return JSON.stringify(analysisResult, null, 2);
+
+                  // Format the text properly with line breaks
+                  return draftText.split('\n').map((line, index) => (
+                    <React.Fragment key={index}>
+                      {line}
+                      {index < draftText.split('\n').length - 1 && <br />}
+                    </React.Fragment>
+                  ));
                 })()}
               </div>
               <button

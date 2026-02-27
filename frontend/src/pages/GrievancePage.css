@@ -400,23 +400,51 @@
 }
 
 .grv-draft-section {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid #e0e7ff;
+  padding: 2.5rem;
+  border: 2px solid #e0e7ff;
   position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .grv-draft-content {
-  color: #334155;
-  line-height: 1.8;
-  font-size: 1rem;
+  /* Make it look like a formal document/letter */
+  color: #1e293b;
+  line-height: 1.9;
+  font-size: 1.05rem;
+  font-family: 'Georgia', 'Times New Roman', serif;
   white-space: pre-wrap;
   word-wrap: break-word;
-  margin-bottom: 1rem;
-  max-height: 400px;
+  margin-bottom: 1.5rem;
+  max-height: 500px;
   overflow-y: auto;
-  padding-right: 0.5rem;
+  padding: 1.5rem;
+  background: #fafafa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.grv-draft-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.grv-draft-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.grv-draft-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.grv-draft-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .grv-copy-btn {
