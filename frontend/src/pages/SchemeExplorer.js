@@ -16,7 +16,7 @@ const SchemeExplorer = () => {
   const { t } = useTranslation();
   const { eligibleSchemes, eligibleLoading, refreshEligibleSchemes } = useContext(AuthContext);
   const [schemes, setSchemes] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('eligible');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
@@ -29,14 +29,8 @@ const SchemeExplorer = () => {
 
   const fetchSchemes = async () => {
     try {
-      let response;
-      if (filter === 'unclaimed') {
-        response = await api.get('/schemes/unclaimed/me');
-        setSchemes(response.data.data.map(item => item.scheme));
-      } else {
-        response = await api.get('/schemes');
-        setSchemes(response.data.data);
-      }
+      const response = await api.get('/schemes');
+      setSchemes(response.data.data);
     } catch (error) {
       console.error('Error fetching schemes:', error);
     } finally {
@@ -94,22 +88,16 @@ const SchemeExplorer = () => {
 
         <div className="filter-buttons">
           <button 
-            className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setFilter('all')}
-          >
-            {t('allSchemes')}
-          </button>
-          <button 
             className={`btn ${filter === 'eligible' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilter('eligible')}
           >
             {t('eligibleForMe')}
           </button>
           <button 
-            className={`btn ${filter === 'unclaimed' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setFilter('unclaimed')}
+            className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFilter('all')}
           >
-            {t('unclaimedBenefits')}
+            {t('allSchemes')}
           </button>
         </div>
 
