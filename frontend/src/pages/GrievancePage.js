@@ -120,8 +120,12 @@ const GrievancePage = () => {
         location: formData.location
       };
 
+      console.log('📤 Submitting grievance:', payload);
+
       // Call backend endpoint (which forwards to webhook)
       const response = await api.post('/grievances/submit-photo', payload);
+
+      console.log('📨 Received response:', response.data);
 
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to submit grievance');
@@ -129,13 +133,21 @@ const GrievancePage = () => {
 
       // Store analysis result from webhook
       if (response.data.data?.analysis) {
+        console.log('✅ Analysis received:', response.data.data.analysis);
         setAnalysisResult(response.data.data.analysis);
+        setMessage({ 
+          type: 'success', 
+          text: 'Grievance analyzed successfully! See the AI analysis below.' 
+        });
+      } else {
+        console.log('⚠️ No analysis in response. Full data:', response.data.data);
+        // Show webhook configuration note if available
+        const note = response.data.data?.webhookNote;
+        setMessage({ 
+          type: 'warning', 
+          text: note || 'Grievance submitted successfully! (AI analysis not available - webhook may need configuration)' 
+        });
       }
-
-      setMessage({ 
-        type: 'success', 
-        text: 'Grievance analyzed successfully! See the AI analysis below.' 
-      });
 
       // Reset form
       setFormData({
@@ -316,14 +328,36 @@ const GrievancePage = () => {
             {/* Draft Response */}
             <div className="grv-draft-section">
               <div className="grv-draft-content">
-                {analysisResult.draft || analysisResult.choices?.[0]?.message?.content || analysisResult}
+                {(() => {
+                  // Handle different response formats from webhook
+                  if (typeof analysisResult === 'string') {
+                    return analysisResult;
+                  }
+                  if (analysisResult.draft) {
+                    return analysisResult.draft;
+                  }
+                  if (analysisResult.choices?.[0]?.message?.content) {
+                    return analysisResult.choices[0].message.content;
+                  }
+                  if (analysisResult.message?.content) {
+                    return analysisResult.message.content;
+                  }
+                  // Try to extract text from any structure
+                  return JSON.stringify(analysisResult, null, 2);
+                })()}
               </div>
               <button
                 type="button"
                 className="grv-copy-btn"
                 onClick={() => {
-                  const text = analysisResult.draft || analysisResult.choices?.[0]?.message?.content || analysisResult;
-                  navigator.clipboard.writeText(typeof text === 'string' ? text : JSON.stringify(text));
+                  let text = analysisResult;
+                  if (typeof analysisResult !== 'string') {
+                    text = analysisResult.draft || 
+                           analysisResult.choices?.[0]?.message?.content || 
+                           analysisResult.message?.content ||
+                           JSON.stringify(analysisResult);
+                  }
+                  navigator.clipboard.writeText(text);
                   setMessage({ type: 'success', text: 'Draft copied to clipboard!' });
                   setTimeout(() => setMessage({ type: '', text: '' }), 2000);
                 }}
