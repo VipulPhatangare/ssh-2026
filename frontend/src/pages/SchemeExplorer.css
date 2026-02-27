@@ -346,6 +346,15 @@
   }
 }
 
+/* Match badge inside a scheme-card title row */
+.scheme-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
 /* ===================================
    ELIGIBLE FOR YOU SECTION
    =================================== */

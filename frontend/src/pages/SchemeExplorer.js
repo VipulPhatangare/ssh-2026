@@ -23,16 +23,14 @@ const SchemeExplorer = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSchemes();
+    // 'eligible' tab uses n8n context data — no backend fetch needed
+    if (filter !== 'eligible') fetchSchemes();
   }, [filter]);
 
   const fetchSchemes = async () => {
     try {
       let response;
-      if (filter === 'eligible') {
-        response = await api.get('/schemes/eligible/me');
-        setSchemes(response.data.eligible.map(item => item.scheme));
-      } else if (filter === 'unclaimed') {
+      if (filter === 'unclaimed') {
         response = await api.get('/schemes/unclaimed/me');
         setSchemes(response.data.data.map(item => item.scheme));
       } else {
@@ -85,7 +83,7 @@ const SchemeExplorer = () => {
     setSelectedDepartment(e.target.value);
   };
 
-  if (loading) {
+  if (loading && filter !== 'eligible') {
     return <div className="loading">{t('loading')}</div>;
   }
 
@@ -192,7 +190,49 @@ const SchemeExplorer = () => {
         </div>
 
         <div className="schemes-list">
-          {filteredSchemes.length === 0 ? (
+          {filter === 'eligible' ? (
+            // ── Eligible tab: render n8n AI-recommended schemes ──
+            eligibleLoading ? (
+              <div className="eligible-loading" style={{ padding: '40px 0' }}>
+                <div className="eligible-spinner" />
+                <p>Finding best schemes for your profile…</p>
+              </div>
+            ) : eligibleSchemes.length === 0 ? (
+              <div className="no-schemes">
+                <p>No AI recommendations yet.</p>
+                <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={refreshEligibleSchemes}>
+                  🔄 Get My Eligible Schemes
+                </button>
+              </div>
+            ) : (
+              eligibleSchemes.map((scheme, idx) => (
+                <div key={scheme.schemeId || idx} className="scheme-card">
+                  <div className="scheme-header">
+                    <div className="scheme-info">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <h3 className="scheme-name" style={{ margin: 0 }}>{scheme.scheme_name}</h3>
+                        {scheme.match_score != null && (
+                          <span
+                            className="eligible-match-badge"
+                            style={{ backgroundColor: scoreColor(scheme.match_score), flexShrink: 0 }}
+                          >
+                            {scheme.match_score}% Match
+                          </span>
+                        )}
+                      </div>
+                      <p className="scheme-description">{scheme.description}</p>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/schemes/${scheme.schemeId}`)}
+                      className="btn btn-primary view-more-btn"
+                    >
+                      {t('viewMore')}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )
+          ) : filteredSchemes.length === 0 ? (
             <p className="no-schemes">
               {schemes.length === 0
                 ? t('noSchemes')
