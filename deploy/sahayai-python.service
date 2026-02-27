@@ -1,0 +1,29 @@
+# =============================================================
+# Systemd Service — sahayai-python (alternative to PM2)
+# Place at: /etc/systemd/system/sahayai-python.service
+#
+# Usage:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable sahayai-python
+#   sudo systemctl start sahayai-python
+# =============================================================
+
+[Unit]
+Description=Sahayai Python Prediction Microservice
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/sahayai
+ExecStart=/var/www/sahayai/.venv/bin/python /var/www/sahayai/prediction_server.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sahayai-python
+Environment=FLASK_ENV=production
+Environment=PORT=5001
+
+[Install]
+WantedBy=multi-user.target

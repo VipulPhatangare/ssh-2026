@@ -1,5 +1,7 @@
 node_modules/
 .env
+.env.local
+.env.*.local
 uploads/
 dist/
 build/
@@ -7,3 +9,16 @@ build/
 *.log
 coverage/
 .vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv-1/
+*.pkl
+
+# PM2
+.pm2/
+
+# Frontend build (generated on server)
+frontend/build/

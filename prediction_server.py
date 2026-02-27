@@ -92,5 +92,6 @@ def predict():
 
 
 if __name__ == "__main__":
-    print("🚀 Prediction server running on http://localhost:5001")
-    app.run(host="0.0.0.0", port=5001, debug=False)
+    port = int(os.environ.get("PORT", 5001))
+    print(f"🚀 Prediction server running on http://localhost:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
