@@ -152,7 +152,13 @@ exports.getSchemesByLifeEvent = async (req, res, next) => {
 // @access  Private
 exports.checkSchemeDocuments = async (req, res, next) => {
   try {
-    const scheme = await Scheme.findById(req.params.id);
+    let scheme;
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      scheme = await Scheme.findById(req.params.id);
+    }
+    if (!scheme) {
+      scheme = await Scheme.findOne({ schemeId: req.params.id });
+    }
     
     if (!scheme) {
       return res.status(404).json({
