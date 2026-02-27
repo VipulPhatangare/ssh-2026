@@ -363,18 +363,18 @@ const DISTRICT_INDEX = {
 
 const CATEGORY_INDEX = { General:0, OBC:1, SC:2, ST:3, EWS:4 };
 
-// @desc    Predict approval probability for Kisan Kalyan Yojana (S0001 only)
-// @route   POST /api/schemes/S0001/predict-approval
+// @desc    Predict approval probability for Kisan Kalyan Yojana (S0002 only)
+// @route   POST /api/schemes/S0002/predict-approval
 // @access  Private
 exports.predictApproval = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Guard — only S0001 uses this ML model
-    if (id !== 'S0001') {
+    // Guard — only S0002 uses this ML model
+    if (id !== 'S0002') {
       return res.status(400).json({
         success: false,
-        message: 'Approval prediction is only available for scheme S0001',
+        message: 'Approval prediction is only available for scheme S0002',
       });
     }
 
@@ -447,7 +447,7 @@ exports.predictApproval = async (req, res, next) => {
 
     return res.status(200).json({
       success   : true,
-      schemeId  : 'S0001',
+      schemeId  : 'S0002',
       userName  : user.fullName,
       features,          // echo back so frontend can inspect
       prediction,

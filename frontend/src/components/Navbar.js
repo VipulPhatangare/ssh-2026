@@ -39,7 +39,7 @@ const Navbar = () => {
                   🤖 AI Assistant
                   <span className="ai-new-badge">NEW</span>
                 </Link>
-                <Link to="/schemes/S0001" className="nav-link predict-nav-link">
+                <Link to="/schemes/S0002" className="nav-link predict-nav-link">
                   🌾 Predict Approval
                 </Link>
                 {user.role === 'Admin' && (

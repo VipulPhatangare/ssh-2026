@@ -38,7 +38,7 @@ const SchemeDetails = () => {
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // ── Prediction states (S0001 only) ────────────────────────────────────────
+  // ── Prediction states (S0002 only) ────────────────────────────────────────
   const [showPredictor, setShowPredictor] = useState(false);
   const [predForm, setPredForm]           = useState(PRED_FORM_DEFAULTS);
   const [predResult, setPredResult]       = useState(null);
@@ -89,7 +89,7 @@ const SchemeDetails = () => {
     setPredResult(null);
     setPredError(null);
     try {
-      const res = await api.post('/schemes/S0001/predict-approval', {
+      const res = await api.post('/schemes/S0002/predict-approval', {
         ...predForm,
         land_area_hectare: parseFloat(predForm.land_area_hectare) || 0,
         pm_kisan_installment_received: parseInt(predForm.pm_kisan_installment_received) || 0,
@@ -208,7 +208,7 @@ const SchemeDetails = () => {
                 <h1 className="scheme-title">{scheme.name}</h1>
                 <p className="scheme-dept">{scheme.department}</p>
               </div>
-              {scheme.schemeId === 'S0001' && (
+              {scheme.schemeId === 'S0002' && (
                 <button
                   className="btn-predict btn-predict-header"
                   onClick={() => { setShowPredictor(true); handlePredReset(); }}
@@ -385,7 +385,7 @@ const SchemeDetails = () => {
             <div className="pred-modal-header">
               <div>
                 <h2 className="pred-modal-title">🤖 Approval Prediction</h2>
-                <p className="pred-modal-subtitle">Kisan Kalyan Yojana (S0001) — Fill details below</p>
+                <p className="pred-modal-subtitle">Kisan Kalyan Yojana (S0002) — Fill details below</p>
               </div>
               <button className="pred-close-btn" onClick={() => setShowPredictor(false)}>✕</button>
             </div>
