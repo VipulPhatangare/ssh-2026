@@ -1,9 +1,11 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
 import './Profile.css';
 
 const Profile = () => {
+  const { t } = useTranslation();
   const { user, updateProfile } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const [showGovDetails, setShowGovDetails] = useState(false);
@@ -97,7 +99,7 @@ const Profile = () => {
       // Release the blob URL after the tab has had time to load it
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (err) {
-      setMessage('Failed to open document. Please try again.');
+      setMessage(t('failedOpenDoc'));
       setTimeout(() => setMessage(''), 3000);
     }
   };
@@ -122,7 +124,7 @@ const Profile = () => {
       document.body.removeChild(anchor);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch (err) {
-      setMessage('Failed to download document. Please try again.');
+      setMessage(t('failedDownloadDoc'));
       setTimeout(() => setMessage(''), 3000);
     }
   };
@@ -136,10 +138,10 @@ const Profile = () => {
     const result = await updateProfile(formData);
     if (result.success) {
       setDocUploadState(prev => ({ ...prev, [docType]: 'done' }));
-      setMessage('✓ Document uploaded successfully!');
+      setMessage(t('docUploaded'));
     } else {
       setDocUploadState(prev => ({ ...prev, [docType]: 'error' }));
-      setMessage(result.message || 'Failed to upload document');
+      setMessage(result.message || t('failedOpenDoc'));
     }
     setTimeout(() => {
       setMessage('');
@@ -166,9 +168,9 @@ const Profile = () => {
     setIsLoading(false);
     
     if (result.success) {
-      setMessage('✓ Profile updated successfully!');
+      setMessage(t('profileUpdated'));
     } else {
-      setMessage(result.message || 'Failed to update profile');
+      setMessage(result.message || t('failedOpenDoc'));
     }
 
     setTimeout(() => setMessage(''), 3000);
@@ -177,7 +179,7 @@ const Profile = () => {
   return (
     <div className="profile-page">
       <div className="container">
-        <h1>My Profile</h1>
+        <h1>{t('myProfile')}</h1>
 
         {message && (
           <div className={`alert ${message.includes('✓') ? 'alert-success' : 'alert-error'}`}>
@@ -189,11 +191,11 @@ const Profile = () => {
           <form onSubmit={handleSubmit} className="profile-form-wrapper">
             {/* BASIC INFORMATION SECTION */}
             <div className="form-section">
-              <h2 className="section-heading">Basic Information</h2>
+              <h2 className="section-heading">{t('basicInformation')}</h2>
               
               <div className="form-grid">
                 <div className="form-group">
-                  <label>Full Name *</label>
+                  <label>{t('fullNameLabel')}</label>
                   <input
                     type="text"
                     name="fullName"
@@ -204,18 +206,18 @@ const Profile = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Email</label>
+                  <label>{t('emailLabel')}</label>
                   <input
                     type="email"
                     value={user?.email}
                     disabled
                     className="disabled-input"
                   />
-                  <small>Email cannot be changed</small>
+                  <small>{t('emailCannotChange')}</small>
                 </div>
 
                 <div className="form-group">
-                  <label>Age *</label>
+                  <label>{t('ageLabel')}</label>
                   <input
                     type="number"
                     name="age"
@@ -226,19 +228,19 @@ const Profile = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Gender *</label>
+                  <label>{t('genderLabel')}</label>
                   <select name="gender" value={formData.gender} onChange={handleChange} required>
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
+                    <option value="">{t('selectGender')}</option>
+                    <option value="Male">{t('male')}</option>
+                    <option value="Female">{t('female')}</option>
+                    <option value="Other">{t('other')}</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Caste Category *</label>
+                  <label>{t('casteCategoryLabel')}</label>
                   <select name="casteCategory" value={formData.casteCategory} onChange={handleChange} required>
-                    <option value="">Select Category</option>
+                    <option value="">{t('selectCategory')}</option>
                     <option value="General">General</option>
                     <option value="OBC">OBC</option>
                     <option value="SC">SC</option>
@@ -248,7 +250,7 @@ const Profile = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Annual Income (₹) *</label>
+                  <label>{t('annualIncomeLabel')}</label>
                   <input
                     type="number"
                     name="annualIncome"
@@ -259,24 +261,24 @@ const Profile = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Occupation *</label>
+                  <label>{t('occupationLabel')}</label>
                   <select name="occupation" value={formData.occupation} onChange={handleChange} required>
-                    <option value="">Select Occupation</option>
-                    <option value="Student">Student</option>
-                    <option value="Farmer">Farmer</option>
-                    <option value="Business">Business</option>
-                    <option value="Job">Job</option>
-                    <option value="Unemployed">Unemployed</option>
-                    <option value="Self-Employed">Self-Employed</option>
-                    <option value="Retired">Retired</option>
-                    <option value="Other">Other</option>
+                    <option value="">{t('selectOccupation')}</option>
+                    <option value="Student">{t('occupationStudent')}</option>
+                    <option value="Farmer">{t('occupationFarmer')}</option>
+                    <option value="Business">{t('occupationBusiness')}</option>
+                    <option value="Job">{t('occupationJob')}</option>
+                    <option value="Unemployed">{t('occupationUnemployed')}</option>
+                    <option value="Self-Employed">{t('occupationSelfEmployed')}</option>
+                    <option value="Retired">{t('occupationRetired')}</option>
+                    <option value="Other">{t('other')}</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>District *</label>
+                  <label>{t('districtLabel')}</label>
                   <select name="district" value={formData.district} onChange={handleChange} required>
-                    <option value="">Select District</option>
+                    <option value="">{t('selectDistrict')}</option>
                     {districts.map(district => (
                       <option key={district} value={district}>{district}</option>
                     ))}
@@ -284,19 +286,19 @@ const Profile = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Samagra ID (Optional)</label>
+                  <label>{t('samagraIdLabel')}</label>
                   <input
                     type="text"
                     name="samagraId"
                     value={formData.samagraId}
                     onChange={handleChange}
-                    placeholder="9-digit Samagra ID"
+                    placeholder={t('samagraIdPlaceholder')}
                   />
                 </div>
 
                 {user?.role && (
                   <div className="form-group">
-                    <label>Account Role</label>
+                    <label>{t('accountRole')}</label>
                     <div className="readonly-field">
                       <span className="badge badge-info">{user.role}</span>
                     </div>
@@ -313,33 +315,33 @@ const Profile = () => {
                 onClick={() => setShowGovDetails(!showGovDetails)}
               >
                 <span className="toggle-icon">{showGovDetails ? '▼' : '▶'}</span>
-                Additional Government Details (Optional)
+                {t('govDetails')}
               </button>
 
               {showGovDetails && (
                 <div className="gov-details-container">
                   <p className="helper-text">
-                    Providing these details helps in eligibility matching but is not mandatory.
+                    {t('govDetailsHelper')}
                   </p>
 
-                  <h3 className="subsection-heading">Government ID Numbers</h3>
+                  <h3 className="subsection-heading">{t('govIdNumbers')}</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label>Aadhaar Number</label>
+                      <label>{t('aadhaarLabel')}</label>
                       <input
                         type="text"
                         name="aadhaarNumber"
                         value={formData.aadhaarNumber}
                         onChange={handleChange}
-                        placeholder="12-digit Aadhaar"
+                        placeholder={t('aadhaarPlaceholder')}
                         pattern="[0-9]{12}"
                         maxLength="12"
                       />
-                      <small>12 digits only • Securely stored</small>
+                      <small>{t('aadhaarHelper')}</small>
                     </div>
 
                     <div className="form-group">
-                      <label>PAN Number</label>
+                      <label>{t('panLabel')}</label>
                       <input
                         type="text"
                         name="panNumber"
@@ -354,57 +356,57 @@ const Profile = () => {
                     </div>
 
                     <div className="form-group">
-                      <label>Passport Number</label>
+                      <label>{t('passportLabel')}</label>
                       <input
                         type="text"
                         name="passportNumber"
                         value={formData.passportNumber}
                         onChange={handleChange}
-                        placeholder="Passport number"
+                        placeholder={t('passportPlaceholder')}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label>Driving License Number</label>
+                      <label>{t('drivingLicenseLabel')}</label>
                       <input
                         type="text"
                         name="drivingLicenseNumber"
                         value={formData.drivingLicenseNumber}
                         onChange={handleChange}
-                        placeholder="DL number"
+                        placeholder={t('drivingLicensePlaceholder')}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label>Voter ID Number</label>
+                      <label>{t('voterIdLabel')}</label>
                       <input
                         type="text"
                         name="voterIdNumber"
                         value={formData.voterIdNumber}
                         onChange={handleChange}
-                        placeholder="Voter ID"
+                        placeholder={t('voterIdPlaceholder')}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label>Ration Card Number</label>
+                      <label>{t('rationCardLabel')}</label>
                       <input
                         type="text"
                         name="rationCardNumber"
                         value={formData.rationCardNumber}
                         onChange={handleChange}
-                        placeholder="Ration card number"
+                        placeholder={t('rationCardPlaceholder')}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label>Government Employee ID</label>
+                      <label>{t('govEmployeeIdLabel')}</label>
                       <input
                         type="text"
                         name="governmentEmployeeId"
                         value={formData.governmentEmployeeId}
                         onChange={handleChange}
-                        placeholder="Employee ID"
+                        placeholder={t('govEmployeeIdPlaceholder')}
                       />
                     </div>
                   </div>
@@ -416,15 +418,16 @@ const Profile = () => {
 
             {/* DOCUMENTS SECTION */}
             <div className="form-section">
-              <h2 className="section-heading">My Documents</h2>
-              <p className="helper-text">Upload PDF documents up to 10MB each. Documents are securely stored and only visible to you.</p>
+              <h2 className="section-heading">{t('myDocuments')}</h2>
+              <p className="helper-text">{t('uploadHelper')}</p>
 
               <div className="documents-grid">
                 {[
-                  { key: 'incomeCertificate',   label: 'Income Certificate' },
-                  { key: 'domicileCertificate', label: 'Domicile Certificate' },
-                  { key: 'casteCertificate',    label: 'Caste Certificate' }
-                ].map(({ key, label }) => {
+                  { key: 'incomeCertificate',   labelKey: 'incomeCertificate' },
+                  { key: 'domicileCertificate', labelKey: 'domicileCertificate' },
+                  { key: 'casteCertificate',    labelKey: 'casteCertificate' }
+                ].map(({ key, labelKey }) => {
+                  const label = t(labelKey);
                   const fileId   = user?.[key]?.toString();
                   const state    = docUploadState[key];
                   const isUploading = state === 'uploading';
@@ -448,7 +451,7 @@ const Profile = () => {
                       {fileId ? (
                         // Document already uploaded
                         <div className="doc-uploaded">
-                          <span className="uploaded-badge">✓ Uploaded</span>
+                          <span className="uploaded-badge">{t('uploaded')}</span>
                           <div className="doc-btn-row">
                             <button
                               type="button"
@@ -456,7 +459,7 @@ const Profile = () => {
                               onClick={() => handleViewDocument(fileId)}
                               disabled={isUploading}
                             >
-                              View
+                              {t('view')}
                             </button>
                             <button
                               type="button"
@@ -464,7 +467,7 @@ const Profile = () => {
                               onClick={() => handleDownloadDocument(fileId, label)}
                               disabled={isUploading}
                             >
-                              Download
+                              {t('download')}
                             </button>
                             <button
                               type="button"
@@ -472,7 +475,7 @@ const Profile = () => {
                               onClick={() => fileInputRefs[key].current.click()}
                               disabled={isUploading}
                             >
-                              {isUploading ? 'Uploading…' : 'Replace'}
+                              {isUploading ? t('uploading') : t('replace')}
                             </button>
                           </div>
                         </div>
@@ -485,7 +488,7 @@ const Profile = () => {
                             onClick={() => fileInputRefs[key].current.click()}
                             disabled={isUploading}
                           >
-                            {isUploading ? 'Uploading…' : '+ Upload PDF'}
+                            {isUploading ? t('uploading') : t('uploadPdf')}
                           </button>
                         </div>
                       )}
@@ -502,7 +505,7 @@ const Profile = () => {
                 className="btn btn-success"
                 disabled={isLoading}
               >
-                {isLoading ? 'Saving...' : 'Save Changes'}
+                {isLoading ? t('saving') : t('saveChanges')}
               </button>
             </div>
           </form>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import './GrievancePage.css';
 
 const GrievancePage = () => {
+  const { t } = useTranslation();
   const [grievances, setGrievances] = useState([]);
   const [applications, setApplications] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -36,7 +38,7 @@ const GrievancePage = () => {
     e.preventDefault();
     try {
       await api.post('/grievances', formData);
-      setMessage('Grievance submitted successfully!');
+      setMessage(t('grievanceSubmitted'));
       setShowForm(false);
       setFormData({ applicationId: '', complaintText: '' });
       fetchData();
@@ -56,16 +58,16 @@ const GrievancePage = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <div className="loading">{t('loading')}</div>;
   }
 
   return (
     <div className="grievance-page">
       <div className="container">
         <div className="page-header">
-          <h1>Grievances</h1>
+          <h1>{t('grievances')}</h1>
           <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
-            {showForm ? 'Cancel' : 'Raise New Grievance'}
+            {showForm ? t('cancel') : t('raiseGrievance')}
           </button>
         </div>
 
@@ -77,16 +79,16 @@ const GrievancePage = () => {
 
         {showForm && (
           <div className="card">
-            <h2>Submit New Grievance</h2>
+            <h2>{t('submitGrievanceTitle')}</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>Select Application</label>
+                <label>{t('selectApplication')}</label>
                 <select
                   value={formData.applicationId}
                   onChange={(e) => setFormData({...formData, applicationId: e.target.value})}
                   required
                 >
-                  <option value="">-- Select Application --</option>
+                  <option value="">{t('selectApplicationPlaceholder')}</option>
                   {applications.map((app) => (
                     <option key={app._id} value={app._id}>
                       {app.schemeId?.name} - {app.applicationNumber}
@@ -96,17 +98,17 @@ const GrievancePage = () => {
               </div>
 
               <div className="form-group">
-                <label>Complaint Details</label>
+                <label>{t('complaintDetails')}</label>
                 <textarea
                   rows="5"
                   value={formData.complaintText}
                   onChange={(e) => setFormData({...formData, complaintText: e.target.value})}
-                  placeholder="Describe your issue in detail..."
+                  placeholder={t('describeIssue')}
                   required
                 ></textarea>
               </div>
 
-              <button type="submit" className="btn btn-primary">Submit Grievance</button>
+              <button type="submit" className="btn btn-primary">{t('submitGrievanceBtn')}</button>
             </form>
           </div>
         )}
@@ -114,7 +116,7 @@ const GrievancePage = () => {
         <div className="grievances-list">
           {grievances.length === 0 ? (
             <div className="alert alert-info">
-              You haven't raised any grievances yet.
+              {t('noGrievances')}
             </div>
           ) : (
             grievances.map((grievance) => (
@@ -122,7 +124,7 @@ const GrievancePage = () => {
                 <div className="grievance-header">
                   <div>
                     <h3>{grievance.applicationId?.schemeId?.name}</h3>
-                    <p className="grievance-number">Grievance No: {grievance.grievanceNumber}</p>
+                    <p className="grievance-number">{t('grievanceNo', { num: grievance.grievanceNumber })}</p>
                   </div>
                   <span className={`badge badge-${getStatusColor(grievance.status)}`}>
                     {grievance.status}
@@ -132,13 +134,13 @@ const GrievancePage = () => {
                 <p className="complaint-text">{grievance.complaintText}</p>
 
                 <div className="grievance-meta">
-                  <span>Escalation Level: {grievance.escalationLevel}</span>
-                  <span>Created: {new Date(grievance.createdAt).toLocaleDateString()}</span>
+                  <span>{t('escalationLevel', { level: grievance.escalationLevel })}</span>
+                  <span>{t('createdOn', { date: new Date(grievance.createdAt).toLocaleDateString() })}</span>
                 </div>
 
                 {grievance.responses.length > 0 && (
                   <div className="responses-section">
-                    <h4>Responses:</h4>
+                    <h4>{t('responses')}</h4>
                     {grievance.responses.map((response, index) => (
                       <div key={index} className="response-item">
                         <strong>{response.respondent}</strong>

@@ -1,9 +1,11 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import './Auth.css';
 
 const Login = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -35,12 +37,12 @@ const Login = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>Login to Your Account</h2>
+        <h2>{t('loginTitle')}</h2>
         {error && <div className="alert alert-error">{error}</div>}
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email</label>
+            <label>{t('emailLabel')}</label>
             <input
               type="email"
               name="email"
@@ -51,7 +53,7 @@ const Login = () => {
           </div>
 
           <div className="form-group">
-            <label>Password</label>
+            <label>{t('passwordLabel')}</label>
             <input
               type="password"
               name="password"
@@ -62,12 +64,12 @@ const Login = () => {
           </div>
 
           <button type="submit" className="btn btn-primary btn-block">
-            Login
+            {t('login')}
           </button>
         </form>
 
         <p className="auth-link">
-          Don't have an account? <a href="/register">Register here</a>
+          {t('noAccount')} <a href="/register">{t('registerHere')}</a>
         </p>
       </div>
     </div>
