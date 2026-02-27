@@ -6,6 +6,9 @@ export const AuthContext = createContext();
 
 const ELIGIBLE_WEBHOOK = 'https://synthomind.cloud/webhook-test/eligible-for-me';
 
+// Bump this string whenever you want to invalidate all existing caches
+const CACHE_VERSION = 'v2';
+
 // Returns today as 'YYYY-MM-DD'
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -19,8 +22,8 @@ export const AuthProvider = ({ children }) => {
   // Fire webhook once per calendar day per user; cache result in localStorage
   const fetchEligibleSchemesForUser = async (userId) => {
     if (!userId) return;
-    const dateKey    = `eligible_date_${userId}`;
-    const cacheKey   = `eligible_schemes_${userId}`;
+    const dateKey    = `eligible_date_${CACHE_VERSION}_${userId}`;
+    const cacheKey   = `eligible_schemes_${CACHE_VERSION}_${userId}`;
     const today      = todayStr();
     const storedDate  = localStorage.getItem(dateKey);
     const storedSchemes = localStorage.getItem(cacheKey);
@@ -54,8 +57,8 @@ export const AuthProvider = ({ children }) => {
   const refreshEligibleSchemes = async () => {
     const userId = user?._id;
     if (!userId) return;
-    const dateKey  = `eligible_date_${userId}`;
-    const cacheKey = `eligible_schemes_${userId}`;
+    const dateKey  = `eligible_date_${CACHE_VERSION}_${userId}`;
+    const cacheKey = `eligible_schemes_${CACHE_VERSION}_${userId}`;
     localStorage.removeItem(dateKey);
     localStorage.removeItem(cacheKey);
     setEligibleSchemes([]);
