@@ -119,6 +119,18 @@ const PROVIDERS = {
 function _getProvider() {
   const fn = PROVIDERS[PROVIDER];
   if (!fn) throw new Error(`Unknown TRANSLATION_PROVIDER: "${PROVIDER}". Choose: google|azure|libre|mock`);
+
+  // Guard: fall back to mock when the required API key is absent so the
+  // server doesn't spam 400/401 errors on every request.
+  if (PROVIDER === 'google' && !GOOGLE_API_KEY) {
+    console.warn('[TranslationService] GOOGLE_TRANSLATE_API_KEY not set — falling back to mock provider. Set TRANSLATION_PROVIDER=mock in .env to silence this warning.');
+    return _mockTranslate;
+  }
+  if (PROVIDER === 'azure' && !AZURE_KEY) {
+    console.warn('[TranslationService] AZURE_TRANSLATOR_KEY not set — falling back to mock provider.');
+    return _mockTranslate;
+  }
+
   return fn;
 }
 
