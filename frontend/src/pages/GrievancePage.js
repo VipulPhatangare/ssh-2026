@@ -123,7 +123,20 @@ const GrievancePage = () => {
   const extractText = (result) => {
     if (!result) return '';
     if (typeof result === 'string') return result;
+    // Handle array response: [{ cleanedLetter: "..." }]
+    if (Array.isArray(result)) {
+      const first = result[0];
+      if (!first) return '';
+      return (
+        first.cleanedLetter || first.draft || first.output ||
+        first.response || first.text ||
+        first.choices?.[0]?.message?.content ||
+        first.message?.content ||
+        JSON.stringify(first, null, 2)
+      );
+    }
     return (
+      result.cleanedLetter ||
       result.draft || result.output || result.response || result.text ||
       result.choices?.[0]?.message?.content ||
       result.message?.content ||
