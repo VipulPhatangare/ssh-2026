@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import './GrievancePage.css';
@@ -37,60 +37,12 @@ const GrievancePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-<<<<<<< HEAD
-      const payload = {
-        name: formData.name,
-        image_url: formData.image,
-        description: formData.description || 'No description provided',
-        location: formData.location
-      };
-
-      console.log('📤 Submitting grievance:', payload);
-
-      // Call backend endpoint (which forwards to webhook)
-      const response = await api.post('/grievances/submit-photo', payload);
-
-      console.log('📨 Received response:', response.data);
-
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to submit grievance');
-      }
-
-      // Store analysis result from webhook
-      if (response.data.data?.analysis) {
-        console.log('✅ Analysis received:', response.data.data.analysis);
-        setAnalysisResult(response.data.data.analysis);
-        setMessage({ 
-          type: 'success', 
-          text: 'Grievance analyzed successfully! See the AI analysis below.' 
-        });
-      } else {
-        console.log('⚠️ No analysis in response. Full data:', response.data.data);
-        // Show webhook configuration note if available
-        const note = response.data.data?.webhookNote;
-        setMessage({ 
-          type: 'warning', 
-          text: note || 'Grievance submitted successfully! (AI analysis not available - webhook may need configuration)' 
-        });
-      }
-
-      // Reset form
-      setFormData({
-        name: user?.fullName || '',
-        image: null,
-        description: '',
-        location: ''
-      });
-      setImagePreview(null);
-      
-=======
       await api.post('/grievances', formData);
       setMessage(t('grievanceSubmitted'));
       setShowForm(false);
       setFormData({ applicationId: '', complaintText: '' });
       fetchData();
       setTimeout(() => setMessage(''), 3000);
->>>>>>> 9c7f4c0f5b2d007e003e00220a45f8ad05bfb171
     } catch (error) {
       setMessage(error.response?.data?.message || t('grievanceFailed'));
     }
@@ -119,60 +71,9 @@ const GrievancePage = () => {
           </button>
         </div>
 
-<<<<<<< HEAD
-        {/* AI Analysis Result */}
-        {analysisResult && (
-          <div className="grv-analysis-box">
-            <h3 className="grv-analysis-title">🤖 AI-Generated Complaint Draft</h3>
-            <p className="grv-analysis-subtitle">
-              Copy this draft and use it to file your formal complaint
-            </p>
-            
-            {/* Draft Response */}
-            <div className="grv-draft-section">
-              <div className="grv-draft-content">
-                {(() => {
-                  // Handle different response formats from webhook
-                  if (typeof analysisResult === 'string') {
-                    return analysisResult;
-                  }
-                  if (analysisResult.draft) {
-                    return analysisResult.draft;
-                  }
-                  if (analysisResult.choices?.[0]?.message?.content) {
-                    return analysisResult.choices[0].message.content;
-                  }
-                  if (analysisResult.message?.content) {
-                    return analysisResult.message.content;
-                  }
-                  // Try to extract text from any structure
-                  return JSON.stringify(analysisResult, null, 2);
-                })()}
-              </div>
-              <button
-                type="button"
-                className="grv-copy-btn"
-                onClick={() => {
-                  let text = analysisResult;
-                  if (typeof analysisResult !== 'string') {
-                    text = analysisResult.draft || 
-                           analysisResult.choices?.[0]?.message?.content || 
-                           analysisResult.message?.content ||
-                           JSON.stringify(analysisResult);
-                  }
-                  navigator.clipboard.writeText(text);
-                  setMessage({ type: 'success', text: 'Draft copied to clipboard!' });
-                  setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-                }}
-              >
-                📋 Copy Draft
-              </button>
-            </div>
-=======
         {message && (
           <div className={`alert ${message.includes('success') ? 'alert-success' : 'alert-error'}`}>
             {message}
->>>>>>> 9c7f4c0f5b2d007e003e00220a45f8ad05bfb171
           </div>
         )}
 
