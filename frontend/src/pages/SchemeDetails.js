@@ -208,6 +208,14 @@ const SchemeDetails = () => {
                 <h1 className="scheme-title">{scheme.name}</h1>
                 <p className="scheme-dept">{scheme.department}</p>
               </div>
+              {scheme.schemeId === 'S0001' && (
+                <button
+                  className="btn-predict btn-predict-header"
+                  onClick={() => { setShowPredictor(true); handlePredReset(); }}
+                >
+                  🤖 Check Approval Chances
+                </button>
+              )}
             </div>
 
             <div className="scheme-section">
@@ -298,20 +306,7 @@ const SchemeDetails = () => {
               </button>
             </div>
 
-            {/* ── Prediction button — S0001 only ──────────────────────────── */}
-            {scheme.schemeId === 'S0001' && (
-              <div className="pred-trigger-wrapper">
-                <button
-                  className="btn-predict"
-                  onClick={() => { setShowPredictor(true); handlePredReset(); }}
-                >
-                  🤖 Check Approval Chances
-                </button>
-                <p className="pred-trigger-hint">
-                  AI-powered prediction based on your profile &amp; land/bank details
-                </p>
-              </div>
-            )}
+
           </div>
 
           {/* RIGHT SECTION - CHAT INTERFACE (30%) */}
