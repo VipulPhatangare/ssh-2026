@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export const AuthContext = createContext();
 
-const ELIGIBLE_WEBHOOK = 'https://synthomind.cloud/webhook-test/eligible-for-me';
+const ELIGIBLE_WEBHOOK = 'https://synthomind.cloud/webhook/eligible-for-me';
 
 // Bump this string whenever you want to invalidate all existing caches
 const CACHE_VERSION = 'v2';

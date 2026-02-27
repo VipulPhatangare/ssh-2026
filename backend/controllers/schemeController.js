@@ -301,9 +301,9 @@ exports.chatAboutScheme = async (req, res, next) => {
     };
 
     // Print payload to terminal
-    console.log('\n========== WEBHOOK PAYLOAD ==========');
-    console.log(JSON.stringify(payload, null, 2));
-    console.log('=====================================\n');
+    // console.log('\n========== WEBHOOK PAYLOAD ==========');
+    // console.log(JSON.stringify(payload, null, 2));
+    // console.log('=====================================\n');
 
     try {
       const response = await fetch(webhookUrl, {
@@ -321,9 +321,9 @@ exports.chatAboutScheme = async (req, res, next) => {
       const data = await response.json();
 
       // Print webhook response to terminal
-      console.log('\n========== WEBHOOK RESPONSE ==========');
-      console.log(JSON.stringify(data, null, 2));
-      console.log('=====================================\n');
+      // console.log('\n========== WEBHOOK RESPONSE ==========');
+      // console.log(JSON.stringify(data, null, 2));
+      // console.log('=====================================\n');
 
       res.status(200).json({
         success: true,

@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const pdfParse = require('pdf-parse');
 
-const N8N_USER_EMBEDDING_WEBHOOK = 'https://synthomind.cloud/webhook-test/ssh_2026_user_data_embeddings';
+const N8N_USER_EMBEDDING_WEBHOOK = 'https://synthomind.cloud/webhook/ssh_2026_user_data_embeddings';
 
 // Helper: read a GridFS download stream into a Buffer
 const streamToBuffer = (stream) =>
