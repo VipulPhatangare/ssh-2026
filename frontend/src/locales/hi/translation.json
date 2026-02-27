@@ -257,5 +257,25 @@
   "aiCmpFinancialBenefits": "वित्तीय लाभ",
   "aiCmpTypeAssistance": "सहायता का प्रकार",
   "aiCmpApplicationMode": "आवेदन मोड",
-  "aiCmpImplementingDept": "कार्यान्वयन विभाग"
+  "aiCmpImplementingDept": "कार्यान्वयन विभाग",
+
+  "sdActive": "सक्रिय",
+  "sdInactive": "निष्क्रिय",
+  "sdAgeRange": "आयु सीमा",
+  "sdIncomeCap": "आय सीमा",
+  "sdGender": "लिंग",
+  "sdDocuments": "दस्तावेज़",
+  "sdNotApplicable": "लागू नहीं",
+  "sdAnyAge": "कोई भी आयु",
+  "sdNoIncomeLimit": "कोई सीमा नहीं",
+  "sdAllGenders": "सभी लिंग",
+  "sdLifeEvents": "जीवन घटनाएं",
+  "sdHowToApply": "आवेदन कैसे करें",
+  "sdStep1": "ऊपर दिए गए मानदंडों के अनुसार अपनी पात्रता जांचें",
+  "sdStep2": "ऊपर सूचीबद्ध आवश्यक दस्तावेज़ एकत्र करें",
+  "sdStep3": "आधिकारिक पोर्टल पर जाएं और ऑनलाइन आवेदन पूरा करें",
+  "sdOfficialWebsite": "आधिकारिक वेबसाइट पर जाएं",
+  "sdAddedOn": "जोड़ा गया",
+  "sdQuickFacts": "मुख्य तथ्य",
+  "sdSchemeId": "योजना आईडी"
 }

@@ -252,8 +252,14 @@ const SchemeDetails = () => {
           <div className="scheme-details-card">
             <div className="scheme-header-section">
               <div>
+                <div className="scheme-meta-row">
+                  <span className="scheme-id-badge">#{scheme.schemeId}</span>
+                  <span className={`scheme-status-badge ${scheme.isActive !== false ? 'badge-active' : 'badge-inactive'}`}>
+                    {scheme.isActive !== false ? `✓ ${t('sdActive')}` : t('sdInactive')}
+                  </span>
+                </div>
                 <h1 className="scheme-title">{scheme.name}</h1>
-                <p className="scheme-dept">{scheme.department}</p>
+                <p className="scheme-dept">🏙️ {scheme.department}</p>
               </div>
               {scheme.schemeId === 'S0002' && (
                 <button
@@ -263,6 +269,46 @@ const SchemeDetails = () => {
                   🤖 Check Approval Chances
                 </button>
               )}
+            </div>
+
+            {/* ── Quick Facts Band ── */}
+            <div className="scheme-quick-facts">
+              <div className="fact-card">
+                <span className="fact-icon">📅</span>
+                <span className="fact-label">{t('sdAgeRange')}</span>
+                <span className="fact-value">
+                  {(scheme.eligibility?.ageMin > 0 || (scheme.eligibility?.ageMax && scheme.eligibility.ageMax < 120))
+                    ? `${scheme.eligibility.ageMin ?? 0}–${scheme.eligibility.ageMax ?? '∞'} ${t('years')}`
+                    : t('sdAnyAge')}
+                </span>
+              </div>
+              <div className="fact-card">
+                <span className="fact-icon">💰</span>
+                <span className="fact-label">{t('sdIncomeCap')}</span>
+                <span className="fact-value">
+                  {scheme.eligibility?.incomeMax
+                    ? `₹${scheme.eligibility.incomeMax.toLocaleString('en-IN')}`
+                    : t('sdNoIncomeLimit')}
+                </span>
+              </div>
+              <div className="fact-card">
+                <span className="fact-icon">⚧️</span>
+                <span className="fact-label">{t('sdGender')}</span>
+                <span className="fact-value">
+                  {scheme.eligibility?.gender?.length
+                    ? scheme.eligibility.gender.join(', ')
+                    : t('sdAllGenders')}
+                </span>
+              </div>
+              <div className="fact-card">
+                <span className="fact-icon">📄</span>
+                <span className="fact-label">{t('requiredDocuments')}</span>
+                <span className="fact-value">
+                  {scheme.requiredDocuments?.length
+                    ? `${scheme.requiredDocuments.length} ${t('sdDocuments')}`
+                    : t('sdNotApplicable')}
+                </span>
+              </div>
             </div>
 
             <div className="scheme-section">
@@ -338,19 +384,45 @@ const SchemeDetails = () => {
               </div>
             )}
 
+            {/* ── Life Events ── */}
+            {scheme.lifeEvents && scheme.lifeEvents.length > 0 && (
+              <div className="scheme-section">
+                <h2 className="section-title">🌱 {t('sdLifeEvents')}</h2>
+                <div className="life-events-tags">
+                  {scheme.lifeEvents.map((ev, i) => (
+                    <span key={i} className="life-event-tag">{ev}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── How to Apply ── */}
+            {scheme.applyUrl && (
+              <div className="scheme-section">
+                <h2 className="section-title">🚀 {t('sdHowToApply')}</h2>
+                <div className="how-to-apply-steps">
+                  <div className="apply-step"><span className="step-num">1</span><span>{t('sdStep1')}</span></div>
+                  <div className="apply-step"><span className="step-num">2</span><span>{t('sdStep2')}</span></div>
+                  <div className="apply-step"><span className="step-num">3</span><span>{t('sdStep3')}</span></div>
+                </div>
+                <a href={scheme.applyUrl} target="_blank" rel="noopener noreferrer" className="official-link-btn">
+                  🌐 {t('sdOfficialWebsite')} ↗
+                </a>
+              </div>
+            )}
+
             <div className="scheme-actions">
-              <button
-                onClick={handleApply}
-                className="btn btn-primary btn-lg"
-              >
+              <button onClick={handleApply} className="btn btn-primary btn-lg">
                 {t('applyNow')}
               </button>
-              <button
-                onClick={handleBack}
-                className="btn btn-secondary btn-lg"
-              >
+              <button onClick={handleBack} className="btn btn-secondary btn-lg">
                 {t('backToSchemes')}
               </button>
+              {scheme.createdAt && (
+                <p className="scheme-added-on">
+                  📅 {t('sdAddedOn')}: {new Date(scheme.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              )}
             </div>
 
 
@@ -443,10 +515,10 @@ const SchemeDetails = () => {
                 className={`pred-tab ${activeTab === 'predict' ? 'pred-tab-active' : ''}`}
                 onClick={() => setActiveTab('predict')}
               >🔍 Predict Approval</button>
-              <button
+              {/* <button
                 className={`pred-tab ${activeTab === 'docs' ? 'pred-tab-active' : ''}`}
                 onClick={() => setActiveTab('docs')}
-              >📄 Analyze Document</button>
+              >📄 Analyze Document</button> */}
             </div>
 
             {/* ══ TAB 1 — PREDICT ══ */}
@@ -641,8 +713,8 @@ const SchemeDetails = () => {
               )
             )}
 
-            {/* ══ TAB 2 — DOCUMENT ANALYSIS ══ */}
-            {activeTab === 'docs' && (
+            {/* TAB 2 — DOCUMENT ANALYSIS removed */}
+            {false && activeTab === 'docs' && (
               !docAnalysis ? (
                 <form onSubmit={handleDocSubmit} className="pred-form">
                   <div className="doc-upload-intro">

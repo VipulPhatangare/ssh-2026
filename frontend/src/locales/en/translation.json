@@ -257,5 +257,25 @@
   "aiCmpFinancialBenefits": "Financial Benefits",
   "aiCmpTypeAssistance": "Type of Assistance",
   "aiCmpApplicationMode": "Application Mode",
-  "aiCmpImplementingDept": "Implementing Dept."
+  "aiCmpImplementingDept": "Implementing Dept.",
+
+  "sdActive": "Active",
+  "sdInactive": "Inactive",
+  "sdAgeRange": "Age Range",
+  "sdIncomeCap": "Income Cap",
+  "sdGender": "Gender",
+  "sdDocuments": "documents",
+  "sdNotApplicable": "N/A",
+  "sdAnyAge": "Any age",
+  "sdNoIncomeLimit": "No limit",
+  "sdAllGenders": "All genders",
+  "sdLifeEvents": "Life Events",
+  "sdHowToApply": "How to Apply",
+  "sdStep1": "Check your eligibility using the criteria listed above",
+  "sdStep2": "Gather the required documents listed above",
+  "sdStep3": "Visit the official portal and complete the online application",
+  "sdOfficialWebsite": "Visit Official Website",
+  "sdAddedOn": "Added on",
+  "sdQuickFacts": "Quick Facts",
+  "sdSchemeId": "Scheme ID"
 }
