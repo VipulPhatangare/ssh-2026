@@ -1,0 +1,144 @@
+<%--
+  views/schemes/detail.ejs
+  ─────────────────────────────────────────────────────────────
+  Example EJS template for a scheme detail page.
+
+  By the time this template renders, the middleware has already
+  translated every string in `scheme`, `pageTitle`, and `breadcrumb`.
+  The template has NO awareness of language — it just reads locals.
+
+  Available res.locals injected by translationMiddleware:
+    lng        (string)  — active language code, e.g. 'hi'
+    isHindi    (boolean) — convenience flag
+    isEnglish  (boolean) — convenience flag
+
+  The template uses these only for minor UI hints (e.g. RTL for Urdu).
+--%>
+
+<!DOCTYPE html>
+<html lang="<%= lng %>" dir="<%= lng === 'ur' ? 'rtl' : 'ltr' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle %> | MP e-Governance Portal</title>
+  <link rel="stylesheet" href="/css/main.css" />
+
+  <%-- ── Language selector ── --%>
+  <style>
+    .lang-bar { display:flex; gap:.5rem; flex-wrap:wrap; padding:.5rem 1rem; background:#f3f4f6; }
+    .lang-btn { padding:.25rem .6rem; border-radius:4px; text-decoration:none; color:#374151; border:1px solid #d1d5db; font-size:.8rem; }
+    .lang-btn.active { background:#1a56db; color:#fff; border-color:#1a56db; }
+  </style>
+</head>
+<body>
+
+  <%-- ══ Language Selector Bar ══ --%>
+  <nav class="lang-bar" aria-label="Language selector">
+    <% const LANGS = [
+      ['en','English'],['hi','हिंदी'],['mr','मराठी'],['gu','ગુજરાતી'],
+      ['bn','বাংলা'],['ta','தமிழ்'],['te','తెలుగు'],['kn','ಕನ್ನಡ'],
+      ['pa','ਪੰਜਾਬੀ'],['ur','اردو'],['or','ଓଡ଼ିଆ'],['ml','മലയാളം'],
+      ['sa','संस्कृत'],['bund','बुंदेली'],['bag','बघेली'],['mal','मालवी'],['nim','निमाड़ी']
+    ]; %>
+    <% LANGS.forEach(([code, label]) => { %>
+      <a href="?lng=<%= code %>"
+         class="lang-btn <%= lng === code ? 'active' : '' %>"
+         hreflang="<%= code %>"><%= label %></a>
+    <% }); %>
+  </nav>
+
+  <%-- ══ Breadcrumb ══ --%>
+  <nav aria-label="Breadcrumb">
+    <ol class="breadcrumb">
+      <% breadcrumb.forEach((crumb, i) => { %>
+        <li class="breadcrumb-item <%= i === breadcrumb.length - 1 ? 'active' : '' %>">
+          <%= crumb %>
+        </li>
+      <% }); %>
+    </ol>
+  </nav>
+
+  <%-- ══ Scheme Detail Card ══ --%>
+  <main class="container mt-4">
+    <article class="scheme-card">
+
+      <header class="scheme-header">
+        <h1 class="scheme-title"><%= scheme.title %></h1>
+        <% if (scheme.department) { %>
+          <p class="scheme-dept"><%= scheme.department %></p>
+        <% } %>
+      </header>
+
+      <% if (scheme.description) { %>
+        <section class="scheme-section">
+          <h2>Overview</h2>
+          <p><%= scheme.description %></p>
+        </section>
+      <% } %>
+
+      <% if (scheme.benefits && scheme.benefits.length) { %>
+        <section class="scheme-section">
+          <h2>Benefits</h2>
+          <ul>
+            <% (Array.isArray(scheme.benefits) ? scheme.benefits : [scheme.benefits]).forEach(b => { %>
+              <li><%= b %></li>
+            <% }); %>
+          </ul>
+        </section>
+      <% } %>
+
+      <% if (scheme.eligibility) { %>
+        <section class="scheme-section">
+          <h2>Eligibility</h2>
+          <% if (typeof scheme.eligibility === 'string') { %>
+            <p><%= scheme.eligibility %></p>
+          <% } else if (Array.isArray(scheme.eligibility)) { %>
+            <ul>
+              <% scheme.eligibility.forEach(e => { %><li><%= e %></li><% }); %>
+            </ul>
+          <% } else { %>
+            <%# Object with named criteria — rendered as definition list %>
+            <dl>
+              <% Object.entries(scheme.eligibility).forEach(([k, v]) => { %>
+                <dt><%= k %></dt>
+                <dd><%= v %></dd>
+              <% }); %>
+            </dl>
+          <% } %>
+        </section>
+      <% } %>
+
+      <% if (scheme.documents && scheme.documents.length) { %>
+        <section class="scheme-section">
+          <h2>Required Documents</h2>
+          <ul>
+            <% scheme.documents.forEach(d => { %>
+              <li><%= typeof d === 'string' ? d : d.name %></li>
+            <% }); %>
+          </ul>
+        </section>
+      <% } %>
+
+      <% if (scheme.applicationProcess) { %>
+        <section class="scheme-section">
+          <h2>How to Apply</h2>
+          <p><%= scheme.applicationProcess %></p>
+        </section>
+      <% } %>
+
+      <%-- Apply button — schemeCode / externalUrl are NOT translated --%>
+      <% if (scheme.applyUrl) { %>
+        <a href="<%= scheme.applyUrl %>" class="btn btn-primary" target="_blank" rel="noopener">
+          Apply Online
+        </a>
+      <% } %>
+
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Government of Madhya Pradesh | <%= lng.toUpperCase() %></p>
+  </footer>
+
+</body>
+</html>
