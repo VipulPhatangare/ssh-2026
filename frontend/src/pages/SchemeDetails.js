@@ -193,6 +193,7 @@ const SchemeDetails = () => {
   }
 
   return (
+    <>
     <div className="scheme-details-page">
       <div className="container">
         <button onClick={handleBack} className="btn-back">
@@ -605,7 +606,7 @@ const SchemeDetails = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
