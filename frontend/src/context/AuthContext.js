@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export const AuthContext = createContext();
 
-const ELIGIBLE_WEBHOOK = 'https://synthomind.cloud/webhook-test/eligible-for-me';
+const ELIGIBLE_WEBHOOK = 'https://synthomind.cloud/webhook/eligible-for-me';
 
 // Returns today as 'YYYY-MM-DD'
 const todayStr = () => new Date().toISOString().slice(0, 10);
