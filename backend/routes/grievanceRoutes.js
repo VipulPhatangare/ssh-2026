@@ -37,6 +37,8 @@ router.post('/submit-photo', protect, async (req, res) => {
     let webhookData = null;
     try {
       console.log('📤 Sending to image-chat webhook...');
+      console.log('Payload:', JSON.stringify(webhookPayload, null, 2));
+      
       const webhookResponse = await axios.post(
         'https://synthomind.cloud/webhook/image-chat',
         webhookPayload,
@@ -47,12 +49,31 @@ router.post('/submit-photo', protect, async (req, res) => {
       );
       webhookSuccess = true;
       webhookData = webhookResponse.data;
-      console.log('✅ Webhook delivered successfully:', JSON.stringify(webhookData, null, 2));
+      console.log('✅ Webhook delivered successfully');
+      console.log('Response status:', webhookResponse.status);
+      console.log('Response data type:', typeof webhookData);
+      console.log('Response data:', JSON.stringify(webhookData, null, 2));
+      
+      // Check if response is empty or invalid
+      if (!webhookData || webhookData === '' || Object.keys(webhookData).length === 0) {
+        console.log('⚠️ Webhook returned empty response - n8n workflow may not be configured correctly');
+        webhookData = null;
+        webhookSuccess = false;
+      } else {
+        // Check if response is the expected format
+        console.log('Has draft?', !!webhookData.draft);
+        console.log('Has choices?', !!webhookData.choices);
+        console.log('Has message?', !!webhookData.message);
+        console.log('Keys:', Object.keys(webhookData));
+      }
     } catch (webhookError) {
       console.log('⚠️ Webhook failed:', webhookError.message);
       if (webhookError.response) {
         console.log('Response status:', webhookError.response.status);
-        console.log('Response data:', webhookError.response.data);
+        console.log('Response data:', JSON.stringify(webhookError.response.data, null, 2));
+      }
+      if (webhookError.code === 'ECONNABORTED') {
+        console.log('❌ Request timed out after 45 seconds');
       }
       // Continue execution - webhook failure shouldn't block user
     }
@@ -60,13 +81,14 @@ router.post('/submit-photo', protect, async (req, res) => {
     // Return success with webhook response data
     res.status(200).json({ 
       success: true,
-      message: 'Grievance analyzed successfully!',
+      message: webhookSuccess ? 'Grievance analyzed successfully!' : 'Grievance submitted! (AI analysis unavailable - please check n8n webhook configuration)',
       data: {
         image_url,
         location,
         webhookDelivered: webhookSuccess,
         // Include webhook response (issue, department, draft)
-        analysis: webhookData || null
+        analysis: webhookData || null,
+        webhookNote: webhookSuccess ? null : 'n8n webhook returned empty response. Please verify the workflow is active and configured to return analysis data.'
       }
     });
 
