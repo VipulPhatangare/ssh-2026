@@ -14,7 +14,7 @@ const scoreColor = (score) => {
 
 const SchemeExplorer = () => {
   const { t } = useTranslation();
-  const { eligibleSchemes } = useContext(AuthContext);
+  const { eligibleSchemes, eligibleLoading, refreshEligibleSchemes } = useContext(AuthContext);
   const [schemes, setSchemes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -95,14 +95,31 @@ const SchemeExplorer = () => {
         <h1>{t('governmentSchemes')}</h1>
 
         {/* ── AI-recommended "Eligible for You" section ── */}
-        {eligibleSchemes.length > 0 && (
-          <div className="eligible-section">
-            <div className="eligible-section-header">
-              <span className="eligible-star">✨</span>
-              <h2 className="eligible-title">Eligible for You</h2>
-              <span className="eligible-subtitle">AI-matched based on your profile</span>
-            </div>
+        <div className="eligible-section">
+          <div className="eligible-section-header">
+            <span className="eligible-star">✨</span>
+            <h2 className="eligible-title">Eligible for You</h2>
+            <span className="eligible-subtitle">AI-matched based on your profile</span>
+            <button
+              className={`eligible-refresh-btn ${eligibleLoading ? 'loading' : ''}`}
+              onClick={refreshEligibleSchemes}
+              disabled={eligibleLoading}
+              title="Refresh recommendations"
+            >
+              {eligibleLoading ? '⏳ Fetching…' : '🔄 Refresh'}
+            </button>
+          </div>
 
+          {eligibleLoading ? (
+            <div className="eligible-loading">
+              <div className="eligible-spinner" />
+              <p>Finding best schemes for your profile…</p>
+            </div>
+          ) : eligibleSchemes.length === 0 ? (
+            <div className="eligible-empty">
+              <p>No recommendations yet. Click <strong>Refresh</strong> to get AI-matched schemes based on your profile.</p>
+            </div>
+          ) : (
             <div className="eligible-cards-grid">
               {eligibleSchemes.map((scheme, idx) => (
                 <div key={scheme.schemeId || idx} className="eligible-card">
@@ -110,9 +127,9 @@ const SchemeExplorer = () => {
                     <h3 className="eligible-card-name">{scheme.scheme_name}</h3>
                     <span
                       className="eligible-match-badge"
-                      style={{ background: scoreColor(scheme.match_score) }}
+                      style={{ backgroundColor: scoreColor(scheme.match_score) }}
                     >
-                      {scheme.match_score}% Match
+                      {scheme.match_score != null ? `${scheme.match_score}% Match` : 'Matched'}
                     </span>
                   </div>
                   <p className="eligible-card-desc">{scheme.description}</p>
@@ -125,8 +142,8 @@ const SchemeExplorer = () => {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="filter-buttons">
           <button 

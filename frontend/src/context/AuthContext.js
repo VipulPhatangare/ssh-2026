@@ -14,24 +14,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [eligibleSchemes, setEligibleSchemes] = useState([]);
+  const [eligibleLoading, setEligibleLoading] = useState(false);
 
   // Fire webhook once per calendar day per user; cache result in localStorage
   const fetchEligibleSchemesForUser = async (userId) => {
     if (!userId) return;
-    const dateKey   = `eligible_date_${userId}`;
-    const cacheKey  = `eligible_schemes_${userId}`;
-    const today     = todayStr();
-
-    const storedDate   = localStorage.getItem(dateKey);
+    const dateKey    = `eligible_date_${userId}`;
+    const cacheKey   = `eligible_schemes_${userId}`;
+    const today      = todayStr();
+    const storedDate  = localStorage.getItem(dateKey);
     const storedSchemes = localStorage.getItem(cacheKey);
 
     if (storedDate === today && storedSchemes) {
-      // Already fetched today — just restore from cache
       try { setEligibleSchemes(JSON.parse(storedSchemes)); } catch (_) {}
       return;
     }
 
-    // First visit today — call n8n
+    setEligibleLoading(true);
     try {
       const res = await axios.post(
         ELIGIBLE_WEBHOOK,
@@ -46,6 +45,37 @@ export const AuthProvider = ({ children }) => {
       console.log(`✅ Eligible schemes fetched (${schemes.length}) for user ${userId}`);
     } catch (err) {
       console.warn('⚠️  eligible-for-me webhook failed:', err.message);
+    } finally {
+      setEligibleLoading(false);
+    }
+  };
+
+  // Force re-fetch regardless of today's cache
+  const refreshEligibleSchemes = async () => {
+    const userId = user?._id;
+    if (!userId) return;
+    const dateKey  = `eligible_date_${userId}`;
+    const cacheKey = `eligible_schemes_${userId}`;
+    localStorage.removeItem(dateKey);
+    localStorage.removeItem(cacheKey);
+    setEligibleSchemes([]);
+    setEligibleLoading(true);
+    try {
+      const res = await axios.post(
+        ELIGIBLE_WEBHOOK,
+        { userId },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      const raw = Array.isArray(res.data) ? res.data[0] : res.data;
+      const schemes = raw?.recommended_schemes || [];
+      setEligibleSchemes(schemes);
+      localStorage.setItem(dateKey,  todayStr());
+      localStorage.setItem(cacheKey, JSON.stringify(schemes));
+      console.log(`🔄 Eligible schemes refreshed (${schemes.length}) for user ${userId}`);
+    } catch (err) {
+      console.warn('⚠️  eligible-for-me refresh failed:', err.message);
+    } finally {
+      setEligibleLoading(false);
     }
   };
 
@@ -151,6 +181,8 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         refreshUser,
         eligibleSchemes,
+        eligibleLoading,
+        refreshEligibleSchemes,
       }}
     >
       {children}
