@@ -1,11 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
 import './SchemeExplorer.css';
 
+// Match score → colour
+const scoreColor = (score) => {
+  if (score >= 85) return '#16a34a'; // green
+  if (score >= 70) return '#d97706'; // amber
+  return '#dc2626';                  // red
+};
+
 const SchemeExplorer = () => {
   const { t } = useTranslation();
+  const { eligibleSchemes } = useContext(AuthContext);
   const [schemes, setSchemes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -84,6 +93,40 @@ const SchemeExplorer = () => {
     <div className="scheme-explorer">
       <div className="container">
         <h1>{t('governmentSchemes')}</h1>
+
+        {/* ── AI-recommended "Eligible for You" section ── */}
+        {eligibleSchemes.length > 0 && (
+          <div className="eligible-section">
+            <div className="eligible-section-header">
+              <span className="eligible-star">✨</span>
+              <h2 className="eligible-title">Eligible for You</h2>
+              <span className="eligible-subtitle">AI-matched based on your profile</span>
+            </div>
+
+            <div className="eligible-cards-grid">
+              {eligibleSchemes.map((scheme, idx) => (
+                <div key={scheme.schemeId || idx} className="eligible-card">
+                  <div className="eligible-card-top">
+                    <h3 className="eligible-card-name">{scheme.scheme_name}</h3>
+                    <span
+                      className="eligible-match-badge"
+                      style={{ background: scoreColor(scheme.match_score) }}
+                    >
+                      {scheme.match_score}% Match
+                    </span>
+                  </div>
+                  <p className="eligible-card-desc">{scheme.description}</p>
+                  <button
+                    className="btn btn-primary eligible-view-btn"
+                    onClick={() => navigate(`/schemes/${scheme.schemeId}`)}
+                  >
+                    View More →
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="filter-buttons">
           <button 
